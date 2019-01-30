@@ -1,2 +1,2 @@
 javac -cp "$PWD/lib/*" TextDiff.java &&
-java -cp .:"$PWD/lib/*" TextDiff
+java -cp .:"$PWD/lib/*" TextDiff $1 $2 $3
