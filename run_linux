@@ -1,2 +1,2 @@
-javac -cp "$PWD/lib/*" TextDiff.java &&
-java -cp .:"$PWD/lib/*" TextDiff $1 $2 $3
+javac -cp "$PWD/lib/*" Benchmark.java TextDiff.java Levenshtein.java &&
+java -cp .:"$PWD/lib/*" Benchmark $1 $2 $3
