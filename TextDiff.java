@@ -15,22 +15,56 @@ import net.sf.extjwnl.dictionary.Dictionary;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.BufferedReader;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+
 public class TextDiff {
-    public static void main(String[] args) {
-        Dictionary dictionary = null;
+
+    Dictionary dict;
+    Double humanScore;
+    String text1;
+    String text2;
+
+    BufferedReader br = null;
+    FileReader fr = null;
+
+    public TextDiff(text1, text2, humanScore){
+      this.fileName1 = text1;
+      this.fileName2 = text2;
+      this.humanScore = humanScore;
+
+      try {
+          this.dict = Dictionary.getDefaultResourceInstance();
+      } catch(JWNLException ex) {}
 
         try {
-            dictionary = Dictionary.getDefaultResourceInstance();
-            System.out.println("DICTIONARY NOT EMPTY = " + dictionary.getSynsetIterator(POS.ADJECTIVE).hasNext());
-        }
-        catch(JWNLException ex) {
+          fr = new FileReader(fileName1);
+          br = new BufferedReader(fr);
+          String sCurrentLine;
 
+          while ((sCurrentLine = br.readLine()) != null) {
+            System.out.println(sCurrentLine);
+          }
+
+        } catch (IOException e) {
+          e.printStackTrace();
         }
 
     }
+
+    public static void main(String[] args) {
+        String fileName1 = args[0];
+        String fileName2 = args[1];
+        Double humanScore = args[2];
+
+        TextDiff textDiff = new TextDiff(text1, text2, humanScore, dict);
+
+    }
+
+
 }
