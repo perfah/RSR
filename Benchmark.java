@@ -4,22 +4,28 @@ import java.util.*;
 import javax.management.timer.Timer;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.stream.Stream;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 
 class Benchmark {
+    public static final double AGREEABLENESS_SIGNIFICANCE = 1.0;
+    public static final double PERFORMANCE_SIGNIFICANCE = 1.0;
+    public static final String ENCODING = "UTF-8";
+    public static final String DELIMTER = " ";
 
-    public static final double K1 = 1.0;
-    public static final double K2 = 1.0;
-    public static final double K3 = 1.0;
+    private static final long MS_TO_NS = 1000000;
 
-    public static void main(String[] args) throws IOException {  
+    public static void main(String[] args) {  
         // ARGUMENTS 
 
         String filePath1, filePath2;   
-        double humanScore;
+        double humanRating;
+                
         try { 
             filePath1 = args[0];
             filePath2 = args[1];
-            humanScore = Double.parseDouble(args[2]);
+            humanRating = Double.parseDouble(args[2]);
         }
         catch(Exception ex){
             System.out.println("[ERROR] Argument requirements not satisfied: " + ex.getMessage());
@@ -27,46 +33,34 @@ class Benchmark {
         }
 
         // FILE READING 
-
-        BufferedReader bufText1, bufText2;
+        
+        Stream<String> stream1, stream2;
         try {
-            bufText1 = new BufferedReader(new FileReader(filePath1));
-            bufText2 = new BufferedReader(new FileReader(filePath2));
+            stream1 = Arrays.stream(new String(Files.readAllBytes(Paths.get(filePath1)), ENCODING).split(DELIMTER));
+            stream2 = Arrays.stream(new String(Files.readAllBytes(Paths.get(filePath2)), ENCODING).split(DELIMTER));   
         }
-        catch(FileNotFoundException ex){
+        catch(Exception ex){
             System.out.println("[ERROR] " + ex.getMessage());
             return;
         }
 
         // BENCHMARK 
 
-        Levenshtein levenshtein = new Levenshtein();
-        ArrayList<TextDiff> synTests = new ArrayList<TextDiff>(); 
+        ArrayList<TestMethod> rodents = new ArrayList<TestMethod>(); 
+
         long t1, t2;
 
-        for(TextDiff test : synTests) {
-            bufText1.reset();
-            bufText2.reset();
-
-            // Edit distance:
-            double editDistance = levenshtein.rate(bufText1, bufText2);
-
-            bufText1.reset();
-            bufText2.reset();
-
+        for(TestMethod rodent : rodents) {
             // Test of synonym implementation:
             t1 = System.nanoTime();
-            double score = test.rate(bufText1, bufText2);
+            double rating = rodent.rate(stream1.iterator(), stream2.iterator());
             t2 = System.nanoTime();
-            long msElapsed = (t2 - t1) / 1000000;
+            long msElapsed = (t2 - t1) / MS_TO_NS;
             
-            double result = K1 * editDistance + K2 * Math.abs(humanScore - score) + K3 * msElapsed;
-            System.out.println(test.toString() + result);
+            double result = AGREEABLENESS_SIGNIFICANCE * Math.abs(rating - humanRating) + PERFORMANCE_SIGNIFICANCE * msElapsed;
+            System.out.println(rodent.toString() + result);
         }
 
-        bufText1.close();
-        bufText2.close();
-
-        System.out.println("[INFO] " + synTests.size() + " tests completed!");
+        System.out.println("[INFO] " + rodents.size() + " tests completed!");
     }
 }

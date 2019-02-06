@@ -1,1 +1,3 @@
 *.class
+TestMethods/*.class
+Utils/*.class

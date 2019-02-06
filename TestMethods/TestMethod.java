@@ -1,11 +1,12 @@
 import net.sf.extjwnl.dictionary.Dictionary;
 import java.io.BufferedReader;
 import net.sf.extjwnl.JWNLException;
+import java.util.Iterator;
 
-abstract class TextDiff {
+abstract class TestMethod {
     protected Dictionary dict;
 
-    TextDiff() {
+    TestMethod() {
         try {
             this.dict = Dictionary.getDefaultResourceInstance();
         } 
@@ -15,7 +16,7 @@ abstract class TextDiff {
   
     }
 
-    public abstract double rate(BufferedReader bufText1, BufferedReader bufText2);
+    public abstract double rate(Iterator<String> iter1, Iterator<String> iter2);
 
     @Override public abstract String toString();
 }
