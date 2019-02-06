@@ -34,10 +34,10 @@ class Benchmark {
 
         // FILE READING 
         
-        Stream<String> stream1, stream2;
+        List<String> words1, words2;
         try {
-            stream1 = Arrays.stream(new String(Files.readAllBytes(Paths.get(filePath1)), ENCODING).split(DELIMTER));
-            stream2 = Arrays.stream(new String(Files.readAllBytes(Paths.get(filePath2)), ENCODING).split(DELIMTER));   
+            words1 = Arrays.asList(new String(Files.readAllBytes(Paths.get(filePath1)), ENCODING).split(DELIMTER));
+            words2 = Arrays.asList(new String(Files.readAllBytes(Paths.get(filePath2)), ENCODING).split(DELIMTER));   
         }
         catch(Exception ex){
             System.out.println("[ERROR] " + ex.getMessage());
@@ -47,13 +47,13 @@ class Benchmark {
         // BENCHMARK 
 
         ArrayList<TestMethod> rodents = new ArrayList<TestMethod>(); 
-
+        
         long t1, t2;
 
         for(TestMethod rodent : rodents) {
             // Test of synonym implementation:
             t1 = System.nanoTime();
-            double rating = rodent.rate(stream1.iterator(), stream2.iterator());
+            double rating = rodent.rate(words1, words2);
             t2 = System.nanoTime();
             long msElapsed = (t2 - t1) / MS_TO_NS;
             
