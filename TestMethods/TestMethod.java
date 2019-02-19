@@ -15,7 +15,6 @@ abstract class TestMethod {
         catch(JWNLException ex) {
             System.out.println("ERROR: Could not initialize dictionary!");
         }
-  
     }
 
     protected boolean synonyms(String w1, String w2){
@@ -36,8 +35,17 @@ abstract class TestMethod {
         return false;
     }
 
+    public void closeDictionary(){
+        try {
+            dict.close();
+        }
+        catch(JWNLException ex) {
+            System.out.println("[ERROR] " + ex.getMessage());
+        }
+    }
+
     public abstract double rate(List<String> words1, List<String> words2);
 
-    @Override public abstract String toString();
+    public abstract String toString();
 }
 

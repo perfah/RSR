@@ -1,2 +1,2 @@
 javac -cp "$PWD/lib/*" Benchmark.java TestMethods/*.java Util/*.java &&
-java -cp .:"$PWD/lib/*" Benchmark $1 $2 $3
+java -cp .:"$PWD/lib/*:$PWD/TestMethods:$PWD/Util" Benchmark $1 $2 $3
