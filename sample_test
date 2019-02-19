@@ -1,0 +1,4 @@
+clear &&
+./run_$1 Samples/happy_sentiments.txt Samples/happy_dummy.txt 0.5 &&
+./run_$1 Samples/happy_sentiments.txt Samples/boat.txt 0.3
+
