@@ -16,6 +16,7 @@ class Benchmark {
     public static final String DELIMTER = " ";
 
     private static final long MS_TO_NS = 1000000;
+    private static final double BOLD_WORTHY_MARGIN = 0.05;
 
     public static void main(String[] args) {  
         // ARGUMENTS 
@@ -76,18 +77,28 @@ class Benchmark {
 
             table[++row] = new Object[] { 
                 rodent.toString(), 
-                Math.round(rating * 100.0 * 10.0) / 10.0, 
+                roundUp(rating), 
                 msElapsed, 
-                Math.round(result * 10.0) / 10.0
+                roundUp(result)
             };
         }
 
         System.out.format(tableFormat, table[0]);
         System.out.println("");
 
-        for(int i = 1; i <= row; i++)
-            System.out.format(tableFormat, table[i]);
+        for(int i = 1; i <= row; i++){
+            if(Math.abs((double)table[i][1] - humanRating) < BOLD_WORTHY_MARGIN)
+                System.out.print("\033[1;6m");
+            else
+                System.out.print("\033[0m");
 
-        System.out.println("\n[INFO] " + rodents.size() + " tests completed!");
+            System.out.format(tableFormat, table[i]);
+        }
+
+        System.out.println("\n[INFO] " + rodents.size() + " tests completed!\n");
+    }
+
+    private static double roundUp(double number){
+        return Math.round(number * 100.0 * 10.0) / 10.0;
     }
 }
