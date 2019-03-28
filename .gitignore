@@ -1,3 +1,4 @@
 *.class
 TestMethods/*.class
 Utils/*.class
+SSR/index.dat
