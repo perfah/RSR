@@ -146,6 +146,18 @@ class Index implements Serializable {
         }
     }
 
+    public void relevance() {
+        /* 
+            TODO: 
+            Implement a function that calculates the relevance of each weight. 
+            It should decrease as the frequency/popularity of any of the two words increases (exponential decrease?)
+            It should automatically be run after indexing and be used by the comparator as an expected max value for each weight.
+        */
+        
+        throw new UnsupportedOperationException();
+    }
+
+
     public void purge() {
         Iterator<String> iter = weights.keySet().iterator();
 

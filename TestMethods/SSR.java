@@ -46,6 +46,7 @@ class SSR extends TestMethod {
 
                 sum += index.getWeight(w1, w2);
                 maxSum += 1.0;
+                // TODO: maxSum = 1.0 * relevance.get(w1, w2)
             }
         }
             
