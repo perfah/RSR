@@ -30,11 +30,13 @@ class Index implements Serializable {
     public static final float MINIMUM_WEIGHT_THRESHOLD = 0.01f;
 
     private HashMap<String, Float> weights;
+    private HashMap<String, Integer> accuracy;
     private HashMap<String, Integer> popularity;
     private float averagePopularity;
 
     public Index(Path index){
         weights = new HashMap<String, Float>();
+        accuracy = new HashMap<String, Integer>();
         popularity = new HashMap<String, Integer>();
         averagePopularity = 0;
     }
@@ -115,12 +117,18 @@ class Index implements Serializable {
                     continue;
 
                 Float w = weights.getOrDefault(h, 0f);
+                Integer n = accuracy.getOrDefault(h, 0);
+                
+                // Invariant: [ x1 + x2 + ... xn+1 ] / n+1 = [ (x1 + ... xn) * n + xn+1 ] / n+1
+                w *= n;
                 w += (float)neighboorhood.get(neighboor) / (float)occurrences;
+                n++;
+                w /= n;
+                accuracy.put(h, n);
+
                 if(averagePopularity > 0 && popularity.containsKey(word) && popularity.containsKey(neighboor))
                     w += w * ((2f*averagePopularity) / (popularity.get(word) + popularity.get(neighboor)) - 1);
-                w /= 2f;
-                //w = Math.min(w, 1f);
-                //w = 1f / (1f + (float)Math.exp(w));
+                
                 weights.put(h, w);
             }            
 
