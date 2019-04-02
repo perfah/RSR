@@ -85,7 +85,7 @@ class Benchmark {
     }
 
     public static void main(String[] args) {          
-        TestMethod rodent = new SSR("SSR/index.dat");
+        TestMethod rodent = new SSR(Paths.get("SSR/index"));
         List<TestResult> results = new ArrayList<TestResult>();
 
         // ARGUMENTS 

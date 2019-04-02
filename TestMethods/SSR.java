@@ -18,18 +18,15 @@ import java.util.stream.*;
 import java.util.Iterator;
 
 class SSR extends TestMethod {
-    Index index = null;
+    Index index;
 
-    public SSR(String indexPath) {
-        try {
-            FileInputStream fis = new FileInputStream(indexPath);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-
-            index = (Index) ois.readObject();
+    public SSR(Path indexLocation) {
+        if(indexLocation.toFile().isDirectory()){
+            index = new Index(indexLocation);
         }
-        catch(Exception e) {
-            System.out.println(e.getMessage());
-            System.out.println("[ERROR] No index found at: " + indexPath);
+        else {
+            index = null;
+            System.out.println("[ERROR] No index found at: " + indexLocation);
         }
 
     }
@@ -37,7 +34,7 @@ class SSR extends TestMethod {
     @Override
     public double rate(List<String> words1, List<String> words2){
         float sum = 0f;
-        float maxSum = 0f; //words1.size() + words2.size() / 2;
+        float maxSum = 0f; 
 
         for(String w1 : words1) {
             for(String w2 : words2) {

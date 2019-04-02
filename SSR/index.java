@@ -25,20 +25,30 @@ import java.util.Optional;
 
 */
 
-class Index implements Serializable {
+class Index {
     public static final String ENCODING = "UTF-8";
     public static final float MINIMUM_WEIGHT_THRESHOLD = 0.01f;
 
-    private HashMap<String, Float> weights;
+    public HashMap<Integer, WordEntry> entries;
     private HashMap<String, Integer> accuracy;
     private HashMap<String, Integer> popularity;
+    public File resource;
     private float averagePopularity;
 
-    public Index(Path index){
-        weights = new HashMap<String, Float>();
-        accuracy = new HashMap<String, Integer>();
+    public Index(Path fsLocation){
+        entries = new HashMap<Integer, WordEntry>();
         popularity = new HashMap<String, Integer>();
         averagePopularity = 0;
+
+        resource = fsLocation.toFile();
+        if(resource.isDirectory()){
+            System.out.println("[NOTE] Reusing index at: " + fsLocation.toAbsolutePath());
+        }
+        else{
+            resource.mkdirs();
+            System.out.println("[WARNING] Initializing new index at: " + fsLocation.toAbsolutePath());
+        }
+
     }
 
     public void calibrate(File docPath, int comparisonSpan) {
@@ -95,23 +105,30 @@ class Index implements Serializable {
             System.out.print("\033[" + (progressBarLen+6) + "D");
 
             int occurrences = 0;
-            
             HashMap<String, Integer> neighboorhood = new HashMap<String, Integer>();
-
+            
+            WordEntry x = WordEntry.of(word, this);
             for(int i = 0; i < bagOfWords.size(); i++){
                 if(bagOfWords.get(i).equals(word)){
+                    x.record();
                     occurrences++;
                     
                     for(int j = Math.max(0, i - comparisonSpan/2); j < Math.min(i + comparisonSpan/2, bagOfWords.size()); j++){
                         String neighboor = bagOfWords.get(j);
-                    
-                        if(!word.trim().equals("") || !neighboor.equals(word))
-                            neighboorhood.put(neighboor, neighboorhood.getOrDefault(neighboor, 0) + 1);
+                        
+                        if(!word.trim().equals("") || !neighboor.equals(word)){
+                            WordEntry y = WordEntry.of(neighboor, this);
+                            WordEntry.join(x, y);
+
+                            //neighboorhood.put(neighboor, neighboorhood.getOrDefault(neighboor, 0) + 1);
+                        }
                     }
                 }
             }
 
             for(String neighboor : neighboorhood.keySet()){
+
+                /*
                 String h = hash(word, neighboor);
                 if(h == null)
                     continue;
@@ -130,6 +147,7 @@ class Index implements Serializable {
                     w += w * ((2f*averagePopularity) / (popularity.get(word) + popularity.get(neighboor)) - 1);
                 
                 weights.put(h, w);
+                */
             }            
 
             popularity.put(word, popularity.getOrDefault(word, 0) + 1);
@@ -141,19 +159,12 @@ class Index implements Serializable {
     }
 
     public void save(String filePath) {
-        try {
-            FileOutputStream fileOut = new FileOutputStream(filePath);
-            ObjectOutputStream out = new ObjectOutputStream(fileOut);
-            out.writeObject(this);
-            out.close();
-            fileOut.close();
-            System.out.println("[NOTE] Index saved!");
-        }
-        catch(Exception e) {
-            System.out.println("[ERROR] Could not save index!");
-        }
+        System.out.println(entries.size());
+        for(WordEntry entry : entries.values())
+            entry.close(resource.toPath());
     }
 
+    /*
     public void purge() {
         Iterator<String> iter = weights.keySet().iterator();
 
@@ -175,6 +186,7 @@ class Index implements Serializable {
         System.out.println("Average popularity: " + averagePopularity);
         System.out.println("[NOTE] Listing complete!");
     }
+    */
 
     private boolean isValidWordPermutation(String wordA, String wordB) {
         return !wordA.equals(wordB) && !wordA.equals("") && !wordB.equals("");
@@ -190,40 +202,16 @@ class Index implements Serializable {
             return wordB + ":" + wordA;
     }
 
+    
     public float getWeight(String word1, String word2) {
-        String h = hash(word1, word2);
-        if(h == null)
-            return 0.5f;
-
-        Float weight = weights.get(h);
-        if(weight == null)
-            return 0.5f;
-        
-        return weight;
+        return WordEntry.similarity(WordEntry.of(word1, this), WordEntry.of(word2, this));
     }
 
     public static void main(String[] args) {
-        final String INDEX_PATH = "index.dat";
+        final String INDEX_PATH = "index";
         
-        Index index = null;
+        Index index = new Index(Paths.get(INDEX_PATH));
         boolean saveRequired = false;
-
-        // LOAD INDEX
-        // ==========
-        try {
-            if (Arrays.stream(args).anyMatch("-r"::equals))
-                throw new Exception();
-
-            FileInputStream fis = new FileInputStream(INDEX_PATH);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-
-            index = (Index) ois.readObject();
-            System.out.println("[NOTE] Reusing index at: " + INDEX_PATH);
-        }
-        catch(Exception e) {
-            index = new Index(Paths.get(INDEX_PATH));
-            System.out.println("[WARNING] Initializing new index at: " + INDEX_PATH);
-        }
 
         // CALIBRATION
         // ===========
@@ -240,6 +228,7 @@ class Index implements Serializable {
 
             if(comparisonSpan.isPresent()){
                 index.calibrate(new File(filePath.get()), comparisonSpan.get());
+                System.out.println("[NOTE] Calibration complete!");
                 saveRequired = true;
             }
             else
@@ -247,13 +236,13 @@ class Index implements Serializable {
         }
         
         if (Arrays.stream(args).anyMatch("-p"::equals)){
-            index.purge();
+            //index.purge();
             saveRequired = true;
         }
 
 
         if (Arrays.stream(args).anyMatch("-l"::equals)){
-            index.list();
+            //index.list();
         }
         
         if(saveRequired)
