@@ -37,12 +37,17 @@ class SSR extends TestMethod {
         float maxSum = 0f; 
 
         for(String w1 : words1) {
+
+            //System.out.print("word = '" + w1 + "' -> ");
+            //System.out.println(WordEntry.of(w1, index).priority.stream().limit(10).collect(Collectors.toSet()));
+
             for(String w2 : words2) {
                 if(w1.equals(w2))
                     continue;
 
-                sum += index.getWeight(w1, w2);
-                maxSum += 1.0;
+                float frequency = 1f / (1f + (WordEntry.of(w1, index).occurrences + WordEntry.of(w2, index).occurrences));
+                sum += index.getWeight(w1, w2) * frequency;
+                maxSum += 1.0 * frequency;
             }
         }
             

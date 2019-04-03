@@ -45,7 +45,7 @@ public class WordEntry implements Serializable {
 
     private String word;
     private HashMap<String, Integer> context;
-    private PriorityQueue<String> priority;
+    public PriorityQueue<String> priority;
     private WordComparator wordCmp;
     public int occurrences;
 
@@ -131,7 +131,7 @@ public class WordEntry implements Serializable {
         Set<String> set = Stream
             .concat(entry1.priority.stream().limit(10), entry2.priority.stream().limit(10))
             .collect(Collectors.toSet());
-        
+
         for(String concept : set) {
             float a;
             if(entry1.occurrences > 0)
@@ -144,8 +144,7 @@ public class WordEntry implements Serializable {
                 b = (float)entry2.context.getOrDefault(concept, 0) / (float)entry2.occurrences;
             else
                 b = 0f;
-            
-            //float frequency = 1f / (1f + entry1.occurrences + entry2.occurrences);
+        
             distance += Math.abs(a - b);
         }
         
