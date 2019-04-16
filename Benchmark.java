@@ -13,6 +13,8 @@ class Benchmark {
     public static final String TARGET_DIR = "LeePincombeWelsh";
     public static final String ENCODING = "UTF-8";
     public static final String DELIMTER = " ";
+    private static final String BOLD_TEXT = "\033[0;1m";
+    private static final String NORMAL_TEXT = "\033[0m";
     private static final long MS_TO_NS = 1000000;
 
     static class TestResult {
@@ -130,18 +132,18 @@ class Benchmark {
 
         final int tableCellSize = 50;
         String tableFormat = "%" + tableCellSize + "s%" + tableCellSize + "s%" + tableCellSize + "s%" + tableCellSize + "s\n"; 
-        System.out.print("\033[1;6m");
+        System.out.print(BOLD_TEXT);
         System.out.format(tableFormat, table[0]);
-        System.out.print("\033[0m");
+        System.out.print(NORMAL_TEXT);
         System.out.println("");
 
         for(int i = 1; i < lines.size(); i++){
             System.out.format(tableFormat, table[i]);
         }
 
-        System.out.print("\033[1;6m");
+        System.out.print(BOLD_TEXT);
         System.out.println("\nPEARSON CORRELATION = " + roundUp(getPearsonCorrelation(results)));
-        System.out.print("\033[0m");
+        System.out.print(NORMAL_TEXT);
 
         System.out.print("\033[0m");
         System.out.println("\n[INFO] " + lines.size() + " tests completed!\n");
