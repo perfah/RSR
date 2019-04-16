@@ -87,12 +87,18 @@ class Benchmark {
     }
 
     public static void main(String[] args) {          
+        if(args.length < 1){
+            System.out.println("[ERROR] The location of the csv-file is required as an command-line-argument!");
+            return;
+        }
+
         TestMethod rodent = new SSR(Paths.get("SSR/index"));
         List<TestResult> results = new ArrayList<TestResult>();
-
+        Path csvPath = Paths.get(args[0]);
+        
         // ARGUMENTS 
         List<List<String>> lines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(TARGET_DIR + "/LeePincombeWelshData.csv"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(csvPath.toFile()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] cellValues = line.split(",");
@@ -108,8 +114,8 @@ class Benchmark {
 
         int row = 0;
         for(List<String> cells : lines) {
-            String filePath1 = TARGET_DIR + "/LeePincombeWelshDocuments_" + cells.get(1) + ".txt";
-            String filePath2 = TARGET_DIR + "/LeePincombeWelshDocuments_" + cells.get(2) + ".txt";
+            String filePath1 = csvPath.getParent() + "/LeePincombeWelshDocuments_" + cells.get(1) + ".txt";
+            String filePath2 = csvPath.getParent() + "/LeePincombeWelshDocuments_" + cells.get(2) + ".txt";
             double humanRating;
 
             try {
