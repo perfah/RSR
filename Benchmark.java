@@ -136,6 +136,29 @@ class Benchmark {
             };
         }
 
+        Arrays.sort(table, new Comparator<Object[]>() {
+            @Override
+            public int compare(Object[] a, Object[] b){
+                double x, y;
+
+                try {
+                    x = Math.abs((double)a[1] - (double)a[2]);
+                }
+                catch(Exception e){
+                    return -1;
+                }
+
+                try {
+                    y = Math.abs((double)b[1] - (double)b[2]);
+                }
+                catch(Exception e){
+                    return 1;
+                }
+
+                return Double.compare(x, y);
+            }
+        });
+
         final int tableCellSize = 50;
         String tableFormat = "%" + tableCellSize + "s%" + tableCellSize + "s%" + tableCellSize + "s%" + tableCellSize + "s\n"; 
         System.out.print(BOLD_TEXT);
