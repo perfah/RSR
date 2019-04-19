@@ -25,34 +25,47 @@ import java.util.Comparator;
 public class WordEntry implements Serializable {
 
     class WordComparator implements Comparator<String>, Serializable {
-        public transient HashMap<String, Integer> contextHandle;
+        public transient HashMap<String, Double> contextHandle;
+        public transient Index indexHandle;
 
-        public WordComparator(HashMap<String, Integer> context){
+        public WordComparator(HashMap<String, Double> context, Index index){
             this.contextHandle = context;
+            this.indexHandle = index;
         }
 
         @Override
         public int compare(String a, String b) {
-            if(contextHandle == null)
+            if(contextHandle == null || indexHandle == null)
+            {
+                
+                //System.out.println("!!!!!");
+                
                 return 0;
-            else
-                return context.get(a) - context.get(b);
+            }
+            else{
+                double occursA = WordEntry.of(a, indexHandle).occurrences;
+                double occursB = WordEntry.of(b, indexHandle).occurrences;
+                return (int)(
+                    contextHandle.get(a) * (1.0 / (1.0 + occursA)) - 
+                    contextHandle.get(b) * (1.0 / (1.0 + occursB))
+                );
+            }
         }
     }
 
     public static final int MAX_SEARCH_RADIUS = 3;
     public static final float AGNOSTIC_WEIGHT = 0.5f;
 
-    private String word;
-    private HashMap<String, Integer> context;
+    public String word;
+    private HashMap<String, Double> context;
     public PriorityQueue<String> priority;
     private WordComparator wordCmp;
     public int occurrences;
 
-    public WordEntry(String word){
+    public WordEntry(String word, Index index){
         this.word = word;
-        context = new HashMap<String, Integer>();
-        wordCmp = this.new WordComparator(context);
+        context = new HashMap<String, Double>();
+        wordCmp = this.new WordComparator(context, index);
         priority = new PriorityQueue<String>(10, wordCmp);
         occurrences = 0;
     }
@@ -79,23 +92,24 @@ public class WordEntry implements Serializable {
     }
 
     public static WordEntry of(String word, Index index) {
+        if(word.isEmpty())
+            return null;
+
         WordEntry entry;
         Integer hash = word.hashCode();
 
         if(index.entries.containsKey(hash)){
+            // Using cached version of word entry
             entry = index.entries.get(hash);
         }
         else {
-            try {
-                FileInputStream fis = new FileInputStream(resource(word, index.resource.toPath()));
-                ObjectInputStream ois = new ObjectInputStream(fis);
+            // Loading word entry from file or creating a new
 
-                entry = (WordEntry) ois.readObject();
-                entry.wordCmp.contextHandle = entry.context;
-                ois.close();
+            try {
+                entry = WordEntry.fromFile(resource(word, index.resource.toPath()), index);
             }
             catch(IOException e) {
-                entry = new WordEntry(word);  
+                entry = new WordEntry(word, index);  
             }
             catch(ClassNotFoundException e) {
                 entry = null;
@@ -104,46 +118,64 @@ public class WordEntry implements Serializable {
             catch(Exception e) {
                 System.out.println(e.toString());
                 e.printStackTrace();
-                entry = new WordEntry(word);  }
+                entry = new WordEntry(word, index);  }
 
+            entry.wordCmp.contextHandle = entry.context;
+            entry.wordCmp.indexHandle = index;
+            
             index.entries.put(hash, entry);
         }
 
         return entry;
     }
 
+    public static WordEntry fromFile(File file, Index index) throws Exception {
+        FileInputStream fis = new FileInputStream(file);
+        ObjectInputStream ois = new ObjectInputStream(fis);
+
+        WordEntry entry = (WordEntry) ois.readObject();
+        ois.close();
+
+        return entry;
+    }
+
     public static void join(WordEntry entry1, WordEntry entry2) {
+        if(entry1.word.equals(entry2.word))
+            return;
+
         assert(entry1 != null && entry2 != null);
 
-        entry1.context.put(entry2.word, entry1.context.getOrDefault(entry2.word, 0) + 1);
+        entry1.context.put(entry2.word, entry1.context.getOrDefault(entry2.word, 0.0) + 1.0);
         if(!entry1.priority.contains(entry2.word))
             entry1.priority.add(entry2.word);
 
-        entry2.context.put(entry1.word, entry2.context.getOrDefault(entry1.word, 0) + 1);
+        entry2.context.put(entry1.word, entry2.context.getOrDefault(entry1.word, 0.0) + 1.0);
         if(!entry2.priority.contains(entry1.word))
             entry2.priority.add(entry1.word);
     }
 
     // Euclidean similarity
-    public static float similarity(WordEntry entry1, WordEntry entry2) {
-        float distance = 0;
+    public static double similarity(WordEntry entry1, WordEntry entry2) {
+        double distance = 0;
 
         Set<String> set = Stream
-            .concat(entry1.priority.stream().limit(10), entry2.priority.stream().limit(10))
+            .concat(entry1.priority.stream().limit(20), entry2.priority.stream().limit(20))
             .collect(Collectors.toSet());
 
-        for(String concept : set) {
-            float a;
-            if(entry1.occurrences > 0)
-                a = (float)entry1.context.getOrDefault(concept, 0) / (float)entry1.occurrences;
-            else
-                a = 0f;
+        //System.out.println(entry1.word + " " + set);
 
-            float b;
-            if(entry2.occurrences > 0)
-                b = (float)entry2.context.getOrDefault(concept, 0) / (float)entry2.occurrences;
+        for(String concept : set) {
+            double a;
+            if(entry1.occurrences > 0)
+                a = entry1.context.getOrDefault(concept, 0.0) / (double)entry1.occurrences;
             else
-                b = 0f;
+                a = 0.0;
+
+                double b;
+            if(entry2.occurrences > 0)
+                b = entry2.context.getOrDefault(concept, 0.0) / (double)entry2.occurrences;
+            else
+                b = 0.0;
         
             distance += Math.abs(a - b);
         }

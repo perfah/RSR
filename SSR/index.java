@@ -25,7 +25,7 @@ import java.util.Optional;
 
 */
 
-class Index {
+class Index implements Serializable {
     public static final String ENCODING = "UTF-8";
     public static final float MINIMUM_WEIGHT_THRESHOLD = 0.01f;
 
@@ -70,7 +70,7 @@ class Index {
         List<String> bagOfWords;
 
         try {
-            String raw = new String(Files.readAllBytes(docPath.toPath()), ENCODING).replaceAll("[^A-Za-z ]+", " ");
+            String raw = new String(Files.readAllBytes(docPath.toPath()), ENCODING).replaceAll("[^A-Za-z' ]+", " ");
             bagOfWords = Arrays.asList(raw.split(" "));
         }
         catch(Exception ex){
@@ -108,6 +108,9 @@ class Index {
             HashMap<String, Integer> neighboorhood = new HashMap<String, Integer>();
             
             WordEntry x = WordEntry.of(word, this);
+            if(x == null)
+                continue;
+
             for(int i = 0; i < bagOfWords.size(); i++){
                 if(bagOfWords.get(i).equals(word)){
                     x.record();
@@ -118,37 +121,14 @@ class Index {
                         
                         if(!word.trim().equals("") || !neighboor.equals(word)){
                             WordEntry y = WordEntry.of(neighboor, this);
-                            WordEntry.join(x, y);
+                            if(y == null)
+                                continue;
 
-                            //neighboorhood.put(neighboor, neighboorhood.getOrDefault(neighboor, 0) + 1);
+                            WordEntry.join(x, y);
                         }
                     }
                 }
-            }
-
-            for(String neighboor : neighboorhood.keySet()){
-
-                /*
-                String h = hash(word, neighboor);
-                if(h == null)
-                    continue;
-
-                Float w = weights.getOrDefault(h, 0f);
-                Integer n = accuracy.getOrDefault(h, 0);
-                
-                // Invariant: [ x1 + x2 + ... xn+1 ] / n+1 = [ (x1 + ... xn) * n + xn+1 ] / n+1
-                w *= n;
-                w += (float)neighboorhood.get(neighboor) / (float)occurrences;
-                n++;
-                w /= n;
-                accuracy.put(h, n);
-
-                if(averagePopularity > 0 && popularity.containsKey(word) && popularity.containsKey(neighboor))
-                    w += w * ((2f*averagePopularity) / (popularity.get(word) + popularity.get(neighboor)) - 1);
-                
-                weights.put(h, w);
-                */
-            }            
+            }       
 
             popularity.put(word, popularity.getOrDefault(word, 0) + 1);
             newAvgPopularity += occurrences;
@@ -177,16 +157,25 @@ class Index {
 
         System.out.println("[NOTE] Purge complete!");
     }
+*/
 
     public void list() {
-        weights.entrySet().stream()
-            .sorted(Entry.comparingByValue())
-            .forEach(System.out::println);    
+        File[] listOfFiles = resource.listFiles();
+        
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                try {
+                    WordEntry entry = WordEntry.fromFile(listOfFiles[i], this);
 
-        System.out.println("Average popularity: " + averagePopularity);
+                    System.out.println(entry.word + " <=> " + entry.priority);
+                }
+                catch(Exception e) {}
+            }
+        }
+
         System.out.println("[NOTE] Listing complete!");
     }
-    */
+    
 
     private boolean isValidWordPermutation(String wordA, String wordB) {
         return !wordA.equals(wordB) && !wordA.equals("") && !wordB.equals("");
@@ -203,7 +192,7 @@ class Index {
     }
 
     
-    public float getWeight(String word1, String word2) {
+    public double getWeight(String word1, String word2) {
         return WordEntry.similarity(WordEntry.of(word1, this), WordEntry.of(word2, this));
     }
 
@@ -242,7 +231,7 @@ class Index {
 
 
         if (Arrays.stream(args).anyMatch("-l"::equals)){
-            //index.list();
+            index.list();
         }
         
         if(saveRequired)
