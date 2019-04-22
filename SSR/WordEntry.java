@@ -43,22 +43,22 @@ public class WordEntry implements Serializable {
                 return 0;
             }
             else {
-                double mostUsedTermOccurrences = indexHandle.mostOccuringEntry.occurences;      // Most occuring term in all Docs.
-                double indexedDocuments = indexHandle.documents;                                // Total number of indexed Docs.
+                double mostUsedTermOccurrences = indexHandle.mostOccuringEntry.occurrences;             // Most occuring term in all Docs.
+                double indexedDocuments = indexHandle.documents;                                        // Total number of indexed Docs.
 
-                double occursA = WordEntry.of(a, indexHandle).occurrences;                      // Num times where term A is used.
-                double occursB = WordEntry.of(b, indexHandle).occurrences;                      // Num times where term B is used.
+                double occursA = WordEntry.of(a, indexHandle, false).occurrences;                       // Num times where term A is used.
+                double occursB = WordEntry.of(b, indexHandle, false).occurrences;                       // Num times where term B is used.
 
-                double docOccurencesA = WordEntry.of(a, indexHandle).documents;                 // Num docs where word A is used.
-                double docOccurencesB = WordEntry.of(b, indexHandle).documents;                 // Num docs where word B is used.
+                double docOccurrencesA = WordEntry.of(a, indexHandle, false).documents;                 // Num docs where word A is used.
+                double docOccurrencesB = WordEntry.of(b, indexHandle, false).documents;                 // Num docs where word B is used.
 
                 // tf = 0.5 + 0.5 (Occurrences of "A" / Most occurrences of a term " X " in all docs)
                 double tfA = 0.5 + 0.5 * (occursA / mostUsedTermOccurrences);
                 double tfB = 0.5 + 0.5 * (occursB / mostUsedTermOccurrences);
 
                 // idf = Number of Documents indexed / Number of docs where the term "A" is used
-                double idfA = indexedDocuments / docOccurencesA;
-                double idfB = indexedDocuments / docOccurencesB;
+                double idfA = indexedDocuments / docOccurrencesA;
+                double idfB = indexedDocuments / docOccurrencesB;
 
                 double tfidfA = tfA * idfA;
                 double tfidfB = tfB * idfB;
