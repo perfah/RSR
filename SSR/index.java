@@ -35,12 +35,14 @@ class Index implements Serializable {
     private HashMap<String, Integer> popularity;
     public File resource;
     private float averagePopularity;
+    public WordEntry mostOccuringEntry;
 
     public Index(Path fsLocation){
         documents = 0;
         entries = new HashMap<Integer, WordEntry>();
         popularity = new HashMap<String, Integer>();
         averagePopularity = 0;
+        mostOccuringEntry = null;
 
         resource = fsLocation.toFile();
         if(resource.isDirectory()){
@@ -116,7 +118,7 @@ class Index implements Serializable {
 
             for(int i = 0; i < bagOfWords.size(); i++){
                 if(bagOfWords.get(i).equals(word)){
-                    x.record();
+                    x.record(this);
                     occurrences++;
                     
                     for(int j = Math.max(0, i - comparisonSpan/2); j < Math.min(i + comparisonSpan/2, bagOfWords.size()); j++){

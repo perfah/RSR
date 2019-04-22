@@ -72,8 +72,11 @@ public class WordEntry implements Serializable {
         documents = 0;
     }
 
-    public void record() {
+    public void record(Index index) {
         occurrences++;
+
+        if(index.mostOccuringEntry == null || occurrences > index.mostOccuringEntry.occurrences)
+            index.mostOccuringEntry = this;
     }
 
     public static File resource(String word, Path index) {
