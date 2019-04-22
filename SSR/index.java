@@ -83,6 +83,10 @@ class Index implements Serializable {
         }
         
         HashSet<String> wordsLeft = new HashSet<String>(bagOfWords);
+        if(wordsLeft.size() == 0){
+            return;
+        }
+
         float newAvgPopularity = 0;
         
         // Syntactic sugar
@@ -107,6 +111,7 @@ class Index implements Serializable {
             System.out.print("\033[" + (progressBarLen-chunksFilled+1) + "C");
             System.out.print(" " + String.format("%3d", (int)(100f * progress)) + "%");
             System.out.print("\033[" + (progressBarLen+6) + "D");
+            System.out.flush();
 
             int occurrences = 0;
             HashMap<String, Integer> neighboorhood = new HashMap<String, Integer>();

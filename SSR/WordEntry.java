@@ -63,9 +63,18 @@ public class WordEntry implements Serializable {
                 double tfidfA = tfA * idfA;
                 double tfidfB = tfB * idfB;
 
-                return (int)(
-                    tfidfA - tfidfB
-                );
+                //System.out.println(a + "=" + tfidfA + " : " + b + "=" + tfidfB);
+                //return (int)(
+                //    100 * (tfidfB - tfidfA)
+                //);
+
+                if(tfidfA < tfidfB)
+                    return 1;
+                else if(tfidfA > tfidfB)
+                    return -1;
+                else
+                    return 0;
+
             }
         }
     }
@@ -114,6 +123,8 @@ public class WordEntry implements Serializable {
     }
 
     public static WordEntry of(String word, Index index, boolean indexing) {
+        word = word.toLowerCase();
+
         if(word.isEmpty())
             return null;
 

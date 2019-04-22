@@ -81,15 +81,15 @@ class SSR extends TestMethod {
         // Debug:
         List<String> conceptualIntersect = new ArrayList<>(entries1.keySet());
         conceptualIntersect.retainAll(entries2.keySet());
-        conceptualIntersect.sort((String a, String b) -> (int)(entries1.get(a) + entries2.get(a) - entries1.get(b) - entries2.get(b)));
-        conceptualIntersect = conceptualIntersect.subList(0, CONCEPT_SCOPE);
+        //conceptualIntersect.sort((String a, String b) -> (int)(entries1.get(a) + entries2.get(a) - entries1.get(b) - entries2.get(b)));
+        //conceptualIntersect = conceptualIntersect.subList(0, CONCEPT_SCOPE);
 
-        System.out.println();
-        System.out.println();
+        //System.out.println();
+        //System.out.println();
         for(String key : conceptualIntersect){
             double avgOccurrences = (entries1.get(key) + entries2.get(key)) / 2.0;
             relatedness += distanceAsFraction.apply(avgOccurrences);
-            System.out.println(key + " <-> " + avgOccurrences);
+            //System.out.println(key + " <-> " + avgOccurrences);
         }
         
         // ~ Scoring ~
