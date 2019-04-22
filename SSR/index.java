@@ -29,16 +29,20 @@ class Index implements Serializable {
     public static final String ENCODING = "UTF-8";
     public static final float MINIMUM_WEIGHT_THRESHOLD = 0.01f;
 
+    public int documents;
     public HashMap<Integer, WordEntry> entries;
     private HashMap<String, Integer> accuracy;
     private HashMap<String, Integer> popularity;
     public File resource;
     private float averagePopularity;
+    public WordEntry mostOccuringEntry;
 
     public Index(Path fsLocation){
+        documents = 0;
         entries = new HashMap<Integer, WordEntry>();
         popularity = new HashMap<String, Integer>();
         averagePopularity = 0;
+        mostOccuringEntry = null;
 
         resource = fsLocation.toFile();
         if(resource.isDirectory()){
@@ -107,20 +111,21 @@ class Index implements Serializable {
             int occurrences = 0;
             HashMap<String, Integer> neighboorhood = new HashMap<String, Integer>();
             
-            WordEntry x = WordEntry.of(word, this);
+            WordEntry x = WordEntry.of(word, this, true);
+            
             if(x == null)
                 continue;
 
             for(int i = 0; i < bagOfWords.size(); i++){
                 if(bagOfWords.get(i).equals(word)){
-                    x.record();
+                    x.record(this);
                     occurrences++;
                     
                     for(int j = Math.max(0, i - comparisonSpan/2); j < Math.min(i + comparisonSpan/2, bagOfWords.size()); j++){
                         String neighboor = bagOfWords.get(j);
                         
                         if(!word.trim().equals("") || !neighboor.equals(word)){
-                            WordEntry y = WordEntry.of(neighboor, this);
+                            WordEntry y = WordEntry.of(neighboor, this, true);
                             if(y == null)
                                 continue;
 
@@ -135,6 +140,7 @@ class Index implements Serializable {
         }
 
         averagePopularity = newAvgPopularity / (float)bagOfWords.size();
+        documents++;
         System.out.println();
     }
 
@@ -189,11 +195,6 @@ class Index implements Serializable {
             return wordA + ":" + wordB;
         else
             return wordB + ":" + wordA;
-    }
-
-    
-    public double getWeight(String word1, String word2) {
-        return WordEntry.similarity(WordEntry.of(word1, this), WordEntry.of(word2, this));
     }
 
     public static void main(String[] args) {

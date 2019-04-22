@@ -78,6 +78,7 @@ public class WordEntry implements Serializable {
     public PriorityQueue<String> priority;
     private WordComparator wordCmp;
     public int occurrences;
+    public int documents;
 
     public WordEntry(String word, Index index){
         this.word = word;
@@ -85,10 +86,14 @@ public class WordEntry implements Serializable {
         wordCmp = this.new WordComparator(context, index);
         priority = new PriorityQueue<String>(10, wordCmp);
         occurrences = 0;
+        documents = 0;
     }
 
-    public void record() {
+    public void record(Index index) {
         occurrences++;
+
+        if(index.mostOccuringEntry == null || occurrences > index.mostOccuringEntry.occurrences)
+            index.mostOccuringEntry = this;
     }
 
     public static File resource(String word, Path index) {
@@ -108,7 +113,7 @@ public class WordEntry implements Serializable {
         }
     }
 
-    public static WordEntry of(String word, Index index) {
+    public static WordEntry of(String word, Index index, boolean indexing) {
         if(word.isEmpty())
             return null;
 
@@ -121,7 +126,6 @@ public class WordEntry implements Serializable {
         }
         else {
             // Loading word entry from file or creating a new
-
             try {
                 entry = WordEntry.fromFile(resource(word, index.resource.toPath()), index);
             }
@@ -141,6 +145,9 @@ public class WordEntry implements Serializable {
             entry.wordCmp.indexHandle = index;
             
             index.entries.put(hash, entry);
+
+            if(indexing)
+                entry.documents++;
         }
 
         return entry;
