@@ -86,19 +86,19 @@ class Benchmark {
         return xySum / (Math.sqrt(xSum) * Math.sqrt(ySum));
     }
 
-    public static void main(String[] args) {          
-        if(args.length < 1){
+    public static void main(String[] args) {    
+        Optional<Path> csvPath = Arrays.stream(args).filter(s -> !s.startsWith("-")).findFirst().map(str -> Paths.get(str));      
+        if(!csvPath.isPresent()){
             System.out.println("[ERROR] The location of the csv-file is required as an command-line-argument!");
             return;
         }
 
         TestMethod rodent = new SSR(Paths.get("SSR/index"));
         List<TestResult> results = new ArrayList<TestResult>();
-        Path csvPath = Paths.get(args[0]);
         
         // ARGUMENTS 
         List<List<String>> lines = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(csvPath.toFile()))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(csvPath.get().toFile()))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] cellValues = line.split(",");
@@ -114,8 +114,8 @@ class Benchmark {
 
         int row = 0;
         for(List<String> cells : lines) {
-            String filePath1 = csvPath.getParent() + "/LeePincombeWelshDocuments_" + cells.get(1) + ".txt";
-            String filePath2 = csvPath.getParent() + "/LeePincombeWelshDocuments_" + cells.get(2) + ".txt";
+            String filePath1 = csvPath.get().getParent() + "/LeePincombeWelshDocuments_" + cells.get(1) + ".txt";
+            String filePath2 = csvPath.get().getParent() + "/LeePincombeWelshDocuments_" + cells.get(2) + ".txt";
             double humanRating;
 
             try {
@@ -136,28 +136,30 @@ class Benchmark {
             };
         }
 
-        Arrays.sort(table, new Comparator<Object[]>() {
-            @Override
-            public int compare(Object[] a, Object[] b){
-                double x, y;
-
-                try {
-                    x = Math.abs((double)a[1] - (double)a[2]);
+        if (Arrays.stream(args).anyMatch("--sort"::equals)){
+            Arrays.sort(table, new Comparator<Object[]>() {
+                @Override
+                public int compare(Object[] a, Object[] b){
+                    double x, y;
+    
+                    try {
+                        x = Math.abs((double)a[1] - (double)a[2]);
+                    }
+                    catch(Exception e){
+                        return -1;
+                    }
+    
+                    try {
+                        y = Math.abs((double)b[1] - (double)b[2]);
+                    }
+                    catch(Exception e){
+                        return 1;
+                    }
+    
+                    return Double.compare(x, y);
                 }
-                catch(Exception e){
-                    return -1;
-                }
-
-                try {
-                    y = Math.abs((double)b[1] - (double)b[2]);
-                }
-                catch(Exception e){
-                    return 1;
-                }
-
-                return Double.compare(x, y);
-            }
-        });
+            });
+        }
 
         final int tableCellSize = 50;
         String tableFormat = "%" + tableCellSize + "s%" + tableCellSize + "s%" + tableCellSize + "s%" + tableCellSize + "s\n"; 
