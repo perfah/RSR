@@ -109,7 +109,8 @@ class Index implements Serializable {
             int occurrences = 0;
             HashMap<String, Integer> neighboorhood = new HashMap<String, Integer>();
             
-            WordEntry x = WordEntry.of(word, this);
+            WordEntry x = WordEntry.of(word, this, true);
+            
             if(x == null)
                 continue;
 
@@ -122,7 +123,7 @@ class Index implements Serializable {
                         String neighboor = bagOfWords.get(j);
                         
                         if(!word.trim().equals("") || !neighboor.equals(word)){
-                            WordEntry y = WordEntry.of(neighboor, this);
+                            WordEntry y = WordEntry.of(neighboor, this, true);
                             if(y == null)
                                 continue;
 
@@ -192,11 +193,6 @@ class Index implements Serializable {
             return wordA + ":" + wordB;
         else
             return wordB + ":" + wordA;
-    }
-
-    
-    public double getWeight(String word1, String word2) {
-        return WordEntry.similarity(WordEntry.of(word1, this), WordEntry.of(word2, this));
     }
 
     public static void main(String[] args) {

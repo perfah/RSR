@@ -49,7 +49,7 @@ class SSR extends TestMethod {
         Function<Double, Double> distanceAsFraction = x -> 1.0 / (1.0 + Math.abs(x));
 
         Function<List<String>, Map<String, Double>> neighboorhoodDump = words -> words.stream()
-            .map(w -> WordEntry.of(w, index))
+            .map(w -> WordEntry.of(w, index, false))
             .filter(Objects::nonNull)
             .flatMap(we -> IntStream
                 .range(0, Math.min(we.priority.size(), CONCEPT_SCOPE))
@@ -65,7 +65,7 @@ class SSR extends TestMethod {
         ArrayList<String> syntacticIntersect = new ArrayList<String>(words1);
         syntacticIntersect.retainAll(words2); 
         for(String word : syntacticIntersect){
-            WordEntry we = WordEntry.of(word, index);
+            WordEntry we = WordEntry.of(word, index, false);
             if(we != null)
                 similarity += distanceAsFraction.apply((double)we.occurrences);
         }

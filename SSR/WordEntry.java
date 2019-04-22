@@ -43,8 +43,8 @@ public class WordEntry implements Serializable {
                 return 0;
             }
             else{
-                double occursA = WordEntry.of(a, indexHandle).occurrences;
-                double occursB = WordEntry.of(b, indexHandle).occurrences;
+                double occursA = WordEntry.of(a, indexHandle, false).occurrences;
+                double occursB = WordEntry.of(b, indexHandle, false).occurrences;
                 return (int)(
                     contextHandle.get(a) * (1.0 / (1.0 + occursA)) - 
                     contextHandle.get(b) * (1.0 / (1.0 + occursB))
@@ -61,6 +61,7 @@ public class WordEntry implements Serializable {
     public PriorityQueue<String> priority;
     private WordComparator wordCmp;
     public int occurrences;
+    public int documents;
 
     public WordEntry(String word, Index index){
         this.word = word;
@@ -68,6 +69,7 @@ public class WordEntry implements Serializable {
         wordCmp = this.new WordComparator(context, index);
         priority = new PriorityQueue<String>(10, wordCmp);
         occurrences = 0;
+        documents = 0;
     }
 
     public void record() {
@@ -91,7 +93,7 @@ public class WordEntry implements Serializable {
         }
     }
 
-    public static WordEntry of(String word, Index index) {
+    public static WordEntry of(String word, Index index, boolean indexing) {
         if(word.isEmpty())
             return null;
 
@@ -104,7 +106,6 @@ public class WordEntry implements Serializable {
         }
         else {
             // Loading word entry from file or creating a new
-
             try {
                 entry = WordEntry.fromFile(resource(word, index.resource.toPath()), index);
             }
@@ -124,6 +125,9 @@ public class WordEntry implements Serializable {
             entry.wordCmp.indexHandle = index;
             
             index.entries.put(hash, entry);
+
+            if(indexing)
+                entry.documents++;
         }
 
         return entry;
