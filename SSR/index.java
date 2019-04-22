@@ -29,6 +29,7 @@ class Index implements Serializable {
     public static final String ENCODING = "UTF-8";
     public static final float MINIMUM_WEIGHT_THRESHOLD = 0.01f;
 
+    public int documents;
     public HashMap<Integer, WordEntry> entries;
     private HashMap<String, Integer> accuracy;
     private HashMap<String, Integer> popularity;
@@ -36,6 +37,7 @@ class Index implements Serializable {
     private float averagePopularity;
 
     public Index(Path fsLocation){
+        documents = 0;
         entries = new HashMap<Integer, WordEntry>();
         popularity = new HashMap<String, Integer>();
         averagePopularity = 0;
@@ -135,6 +137,7 @@ class Index implements Serializable {
         }
 
         averagePopularity = newAvgPopularity / (float)bagOfWords.size();
+        documents++;
         System.out.println();
     }
 
