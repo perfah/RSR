@@ -25,9 +25,9 @@ import java.util.Objects;
 
 class SSR extends TestMethod {
     private Index index;
-    final int CONCEPT_SCOPE = 20;
-    final double SIMILARITY_WEIGHT = 0.1;
-    final double RELATEDNESS_WEIGHT = 0.1; 
+    final int CONCEPT_SCOPE = 10;
+    final double SIMILARITY_WEIGHT = 0.0;
+    final double RELATEDNESS_WEIGHT = 10.0; 
     final double OVERALL_WEIGHT = 0.5; 
 
     public SSR(Path indexLocation) {
@@ -38,7 +38,6 @@ class SSR extends TestMethod {
             index = null;
             System.out.println("[ERROR] No index found at: " + indexLocation);
         }
-
     }
 
     @Override
@@ -54,9 +53,9 @@ class SSR extends TestMethod {
             .filter(Objects::nonNull)
             .flatMap(we -> IntStream
                 .range(0, Math.min(we.priority.size(), CONCEPT_SCOPE))
-                .mapToObj(i -> new SimpleEntry<String, Double>((String)we.priority.toArray()[i], (double)(we.occurrences * i)
+                .mapToObj(i -> new SimpleEntry<String, Double>((String)we.priority.toArray()[i], (double)(we.occurrences * Math.pow(0.8, i))
             )))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> (a + b) / 2.0));
+            .collect(Collectors.groupingBy(Entry::getKey, Collectors.averagingDouble(Entry::getValue)));
         
         // ~ Semantic Similarity ~
         // =======================
@@ -78,15 +77,19 @@ class SSR extends TestMethod {
 
         Map<String, Double> entries1 = neighboorhoodDump.apply(words1);
         Map<String, Double> entries2 = neighboorhoodDump.apply(words2);
-
-        Set<String> conceptualIntersect = entries1.keySet();
-        conceptualIntersect.retainAll(entries2.keySet());
         
-        //System.out.println("=================================");
+        // Debug:
+        List<String> conceptualIntersect = new ArrayList<>(entries1.keySet());
+        conceptualIntersect.retainAll(entries2.keySet());
+        conceptualIntersect.sort((String a, String b) -> (int)(entries1.get(a) + entries2.get(a) - entries1.get(b) - entries2.get(b)));
+        conceptualIntersect = conceptualIntersect.subList(0, CONCEPT_SCOPE);
+
+        System.out.println();
+        System.out.println();
         for(String key : conceptualIntersect){
-            double contribution = distanceAsFraction.apply((entries1.get(key) + entries2.get(key)) / 2.0);
-            relatedness += contribution;
-            //System.out.println(key + " <-> " + contribution);
+            double avgOccurrences = (entries1.get(key) + entries2.get(key)) / 2.0;
+            relatedness += distanceAsFraction.apply(avgOccurrences);
+            System.out.println(key + " <-> " + avgOccurrences);
         }
         
         // ~ Scoring ~
