@@ -122,6 +122,23 @@ public class WordEntry implements Serializable {
         }
     }
 
+    public void delete(Index index) {
+        for(WordEntry entry : index.entries.values()){
+            entry.context.remove(word);
+            entry.priority.remove(word);
+        }
+
+        try {
+            resource(this.word, index.resource.toPath()).deleteOnExit();
+        }
+        catch(Exception e) {
+            System.out.println("[ERROR] Could not delete word entry: " + e.getMessage());
+        }
+
+        index.entries.remove(word);
+    }
+
+
     public static WordEntry of(String word, Index index, boolean indexing) {
         word = word.toLowerCase();
 

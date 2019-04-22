@@ -18,6 +18,7 @@ import java.util.stream.*;
 import java.util.Iterator;
 import java.lang.*;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /*
     TODO
@@ -150,25 +151,38 @@ class Index implements Serializable {
     }
 
     public void save(String filePath) {
-        System.out.println(entries.size());
         for(WordEntry entry : entries.values())
             entry.close(resource.toPath());
     }
 
-    /*
-    public void purge() {
-        Iterator<String> iter = weights.keySet().iterator();
-
-        while(iter.hasNext()) {
-            String key = iter.next();
-
-            if (weights.get(key) < MINIMUM_WEIGHT_THRESHOLD)
-                iter.remove();
+    
+    public void purge(int quantity, boolean preview) {
+        File[] listOfFiles = resource.listFiles();
+        List<WordEntry> entries = new ArrayList<WordEntry>();
+        
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                try {
+                    entries.add(WordEntry.fromFile(listOfFiles[i], this));
+                }
+                catch(Exception e) {
+                    System.out.println("[ERROR] " + e.getMessage());
+                }
+            }
         }
 
-        System.out.println("[NOTE] Purge complete!");
+        Collections.sort(entries, (a, b) -> b.occurrences - a.occurrences);
+
+        System.out.println("The following words " + (preview ? "would" : "will") + " be purged:");
+        for(int i = 0; i < Math.min(quantity, entries.size()); i++){
+            String word = entries.get(i).word;
+
+            if(!preview)
+                entries.get(i).delete(this);
+            System.out.println("    " + (i+1) + ". " + word);
+        }
     }
-*/
+
 
     public void list() {
         File[] listOfFiles = resource.listFiles();
@@ -180,11 +194,11 @@ class Index implements Serializable {
 
                     System.out.println(entry.word + " <=> " + entry.priority);
                 }
-                catch(Exception e) {}
+                catch(Exception e) {
+                    System.out.println("[ERROR] " + e.getMessage());
+                }
             }
         }
-
-        System.out.println("[NOTE] Listing complete!");
     }
     
 
@@ -210,34 +224,43 @@ class Index implements Serializable {
 
         // CALIBRATION
         // ===========
-        Optional<String> filePath = Arrays.stream(args).filter(s -> !s.startsWith("-")).findFirst();
-        if(filePath.isPresent()){
-            Optional<Integer> comparisonSpan = Arrays.stream(args).flatMap(s -> {
-                try { 
-                    return Stream.of(Integer.valueOf(s));
-                }
-                catch(Exception e) {
-                    return Stream.empty();
-                }
-            }).findFirst();
-
-            if(comparisonSpan.isPresent()){
-                index.calibrate(new File(filePath.get()), comparisonSpan.get());
+        OptionalInt calibrationOp = IntStream.range(0, args.length).filter(i -> !args[i].startsWith("-") && !args[i].matches("[0-9]+")).findFirst();
+        if(calibrationOp.isPresent()){
+            try {
+                int comparisonSpan = Integer.valueOf(args[calibrationOp.getAsInt() + 1]); 
+                index.calibrate(new File(args[calibrationOp.getAsInt()]), comparisonSpan);
                 System.out.println("[NOTE] Calibration complete!");
                 saveRequired = true;
             }
-            else
+            catch(Exception e){
                 System.out.println("[ERROR] No comparison span!");
+            }
         }
         
-        if (Arrays.stream(args).anyMatch("-p"::equals)){
-            //index.purge();
-            saveRequired = true;
+        if(saveRequired){
+            index.save(INDEX_PATH);
+            index.entries.clear();
+        }
+
+        OptionalInt purgeOp = IntStream.range(0, args.length).filter(i -> args[i].equals("--purge")).findFirst();
+        if (purgeOp.isPresent()){
+            try{
+                boolean preview = Arrays.stream(args).anyMatch("--preview"::equals);
+                int quantity = Integer.valueOf(args[purgeOp.getAsInt() + 1]); 
+                index.purge(quantity, preview);
+                saveRequired = true;
+                System.out.println("[NOTE] Purge complete!");
+            }
+            catch(Exception e){
+                e.printStackTrace();
+                System.out.println("[ERROR] No purge quantity!");
+            }
         }
 
 
-        if (Arrays.stream(args).anyMatch("-l"::equals)){
+        if (Arrays.stream(args).anyMatch("--list"::equals)){
             index.list();
+            System.out.println("[NOTE] Listing complete!");
         }
         
         if(saveRequired)
