@@ -25,14 +25,17 @@ import java.util.Objects;
 
 class SSR extends TestMethod {
     private Index index;
-    final int CONCEPT_SCOPE = 10;
+    final int CONCEPT_SCOPE = 20;
     final double SIMILARITY_WEIGHT = 0.0;
     final double RELATEDNESS_WEIGHT = 10.0; 
     final double OVERALL_WEIGHT = 0.5; 
 
-    public SSR(Path indexLocation) {
+    private boolean verbose = true;
+
+    public SSR(Path indexLocation, boolean verbose) {
         if(indexLocation.toFile().isDirectory()){
             index = new Index(indexLocation);
+            this.verbose = verbose; 
         }
         else {
             index = null;
@@ -42,6 +45,11 @@ class SSR extends TestMethod {
 
     @Override
     public double rate(List<String> words1, List<String> words2){
+        if(verbose){
+            System.out.println("\nBAG OF WORDS 1:\n" + words1);
+            System.out.println("\nBAG OF WORDS 2:\n" + words2);
+        }
+
         // ~ Lambdas  ~
         // ============
 
@@ -78,18 +86,19 @@ class SSR extends TestMethod {
         Map<String, Double> entries1 = neighboorhoodDump.apply(words1);
         Map<String, Double> entries2 = neighboorhoodDump.apply(words2);
         
-        // Debug:
         List<String> conceptualIntersect = new ArrayList<>(entries1.keySet());
         conceptualIntersect.retainAll(entries2.keySet());
-        //conceptualIntersect.sort((String a, String b) -> (int)(entries1.get(a) + entries2.get(a) - entries1.get(b) - entries2.get(b)));
-        //conceptualIntersect = conceptualIntersect.subList(0, CONCEPT_SCOPE);
+        conceptualIntersect.sort((String a, String b) -> (int)(entries1.get(a) + entries2.get(a) - entries1.get(b) - entries2.get(b)));
+        conceptualIntersect = conceptualIntersect.subList(0, Math.min(CONCEPT_SCOPE, conceptualIntersect.size()));
 
-        //System.out.println();
-        //System.out.println();
+        if(verbose)
+            System.out.println("\nMOST RELEVANT CONCEPTS IN ORDER:");
+        
         for(String key : conceptualIntersect){
             double avgOccurrences = (entries1.get(key) + entries2.get(key)) / 2.0;
             relatedness += distanceAsFraction.apply(avgOccurrences);
-            //System.out.println(key + " <-> " + avgOccurrences);
+            if(verbose)
+                System.out.println(key + " <-> " + avgOccurrences);
         }
         
         // ~ Scoring ~

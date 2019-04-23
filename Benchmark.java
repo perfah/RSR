@@ -93,7 +93,7 @@ class Benchmark {
             return;
         }
 
-        TestMethod rodent = new SSR(Paths.get("SSR/index"));
+        TestMethod rodent = new SSR(Paths.get("SSR/index"), Arrays.stream(args).anyMatch("--verbose"::equals));
         List<TestResult> results = new ArrayList<TestResult>();
         
         // ARGUMENTS 

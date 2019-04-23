@@ -35,7 +35,7 @@ public class WordEntry implements Serializable {
 
         @Override
         public int compare(String a, String b) {
-            if(contextHandle == null || indexHandle == null)
+            if(contextHandle == null || indexHandle == null || indexHandle.mostOccuringEntry == null)
             {
                 
                 //System.out.println("!!!!!");
@@ -124,8 +124,10 @@ public class WordEntry implements Serializable {
 
     public void delete(Index index) {
         for(WordEntry entry : index.entries.values()){
-            entry.context.remove(word);
-            entry.priority.remove(word);
+            if(entry != this) {
+                entry.context.remove(this.word);
+                entry.priority.remove(this.word);
+            }
         }
 
         try {
@@ -159,6 +161,7 @@ public class WordEntry implements Serializable {
             }
             catch(IOException e) {
                 entry = new WordEntry(word, index);  
+                index.entries.put(hash, entry);
             }
             catch(ClassNotFoundException e) {
                 entry = null;
@@ -167,12 +170,8 @@ public class WordEntry implements Serializable {
             catch(Exception e) {
                 System.out.println(e.toString());
                 e.printStackTrace();
-                entry = new WordEntry(word, index);  }
-
-            entry.wordCmp.contextHandle = entry.context;
-            entry.wordCmp.indexHandle = index;
-            
-            index.entries.put(hash, entry);
+                entry = new WordEntry(word, index);  
+            }
 
             if(indexing)
                 entry.documents++;
@@ -186,6 +185,11 @@ public class WordEntry implements Serializable {
         ObjectInputStream ois = new ObjectInputStream(fis);
 
         WordEntry entry = (WordEntry) ois.readObject();
+
+        entry.wordCmp.contextHandle = entry.context;
+        entry.wordCmp.indexHandle = index;
+        
+        index.entries.put(entry.word.hashCode(), entry);
         ois.close();
 
         return entry;

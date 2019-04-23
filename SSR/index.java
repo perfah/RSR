@@ -47,7 +47,7 @@ class Index implements Serializable {
 
         resource = fsLocation.toFile();
         if(resource.isDirectory()){
-            System.out.println("[NOTE] Reusing index at: " + fsLocation.toAbsolutePath());
+            System.out.println("[NOTE] Using index at: " + fsLocation.toAbsolutePath());
         }
         else{
             resource.mkdirs();
@@ -157,48 +157,26 @@ class Index implements Serializable {
 
     
     public void purge(int quantity, boolean preview) {
-        File[] listOfFiles = resource.listFiles();
-        List<WordEntry> entries = new ArrayList<WordEntry>();
-        
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile()) {
-                try {
-                    entries.add(WordEntry.fromFile(listOfFiles[i], this));
-                }
-                catch(Exception e) {
-                    System.out.println("[ERROR] " + e.getMessage());
-                }
-            }
-        }
+        loadAllEntries();
+        List<WordEntry> orderedEntries = new ArrayList<WordEntry>(entries.values());
 
-        Collections.sort(entries, (a, b) -> b.occurrences - a.occurrences);
+        Collections.sort(orderedEntries, (a, b) -> b.occurrences - a.occurrences);
 
-        System.out.println("The following words " + (preview ? "would" : "will") + " be purged:");
+        System.out.println("The following words " + (preview ? "would be " : "are being ") + "purged:");
         for(int i = 0; i < Math.min(quantity, entries.size()); i++){
-            String word = entries.get(i).word;
+            String word = orderedEntries.get(i).word;
 
             if(!preview)
-                entries.get(i).delete(this);
+                orderedEntries.get(i).delete(this);
             System.out.println("    " + (i+1) + ". " + word);
         }
     }
 
 
     public void list() {
-        File[] listOfFiles = resource.listFiles();
-        
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile()) {
-                try {
-                    WordEntry entry = WordEntry.fromFile(listOfFiles[i], this);
-
-                    System.out.println(entry.word + " <=> " + entry.priority);
-                }
-                catch(Exception e) {
-                    System.out.println("[ERROR] " + e.getMessage());
-                }
-            }
-        }
+        loadAllEntries();
+        for(WordEntry entry : entries.values())
+            System.out.println(entry.word + " <=> " + entry.priority);
     }
     
 
@@ -206,14 +184,23 @@ class Index implements Serializable {
         return !wordA.equals(wordB) && !wordA.equals("") && !wordB.equals("");
     }
 
-    public String hash(String wordA, String wordB) {
-        if(wordA.equals("") || wordB.equals("") || wordA.equals(wordB))
-            return null;
+    private void loadAllEntries() {
+        File[] listOfFiles = resource.listFiles();
 
-        if(wordA.compareTo(wordB) > 0)
-            return wordA + ":" + wordB;
-        else
-            return wordB + ":" + wordA;
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                try {
+                    WordEntry entry = WordEntry.fromFile(listOfFiles[i], this);
+                    int hash = entry.word.hashCode();
+
+                    if(!entries.containsKey(hash))
+                        entries.put(hash, entry);
+                }
+                catch(Exception e) {
+                    System.out.println("[ERROR] " + e.getMessage());
+                }
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -229,7 +216,6 @@ class Index implements Serializable {
             try {
                 int comparisonSpan = Integer.valueOf(args[calibrationOp.getAsInt() + 1]); 
                 index.calibrate(new File(args[calibrationOp.getAsInt()]), comparisonSpan);
-                System.out.println("[NOTE] Calibration complete!");
                 saveRequired = true;
             }
             catch(Exception e){
@@ -237,19 +223,13 @@ class Index implements Serializable {
             }
         }
         
-        if(saveRequired){
-            index.save(INDEX_PATH);
-            index.entries.clear();
-        }
-
         OptionalInt purgeOp = IntStream.range(0, args.length).filter(i -> args[i].equals("--purge")).findFirst();
         if (purgeOp.isPresent()){
             try{
                 boolean preview = Arrays.stream(args).anyMatch("--preview"::equals);
                 int quantity = Integer.valueOf(args[purgeOp.getAsInt() + 1]); 
                 index.purge(quantity, preview);
-                saveRequired = true;
-                System.out.println("[NOTE] Purge complete!");
+                saveRequired = !preview;
             }
             catch(Exception e){
                 e.printStackTrace();
@@ -260,7 +240,6 @@ class Index implements Serializable {
 
         if (Arrays.stream(args).anyMatch("--list"::equals)){
             index.list();
-            System.out.println("[NOTE] Listing complete!");
         }
         
         if(saveRequired)
