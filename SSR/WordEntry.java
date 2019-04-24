@@ -60,8 +60,11 @@ public class WordEntry implements Serializable {
                 double idfA = indexedDocuments / docOccurrencesA;
                 double idfB = indexedDocuments / docOccurrencesB;
 
-                double tfidfA = tfA * idfA;
-                double tfidfB = tfB * idfB;
+                double commonOccurrencesA = WordEntry.this.context.get(a);
+                double commonOccurrencesB = WordEntry.this.context.get(b);
+
+                double tfidfA = commonOccurrencesA * tfA * idfA;
+                double tfidfB = commonOccurrencesB * tfB * idfB;
 
                 //System.out.println(a + "=" + tfidfA + " : " + b + "=" + tfidfB);
                 //return (int)(
@@ -142,8 +145,8 @@ public class WordEntry implements Serializable {
 
 
     public static WordEntry of(String word, Index index, boolean indexing) {
-        word = word.toLowerCase();
-
+        word = word.replaceAll("[^a-zA-Z]", "").toLowerCase();
+        
         if(word.isEmpty())
             return null;
 
