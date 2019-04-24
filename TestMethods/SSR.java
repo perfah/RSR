@@ -28,9 +28,11 @@ class SSR extends TestMethod {
     final int CONCEPT_SCOPE = 20;
     final double SIMILARITY_WEIGHT = 0.0;
     final double RELATEDNESS_WEIGHT = 10.0; 
-    final double OVERALL_WEIGHT = 0.5; 
+    final double OVERALL_WEIGHT = 1.0; 
+    final double MIN_SCORE = 0.2;
+    final double MAX_SCORE = 1.0;
 
-    private boolean verbose = true;
+    private boolean verbose;
 
     public SSR(Path indexLocation, boolean verbose) {
         if(indexLocation.toFile().isDirectory()){
@@ -61,7 +63,7 @@ class SSR extends TestMethod {
             .filter(Objects::nonNull)
             .flatMap(we -> IntStream
                 .range(0, Math.min(we.priority.size(), CONCEPT_SCOPE))
-                .mapToObj(i -> new SimpleEntry<String, Double>((String)we.priority.toArray()[i], (double)(we.occurrences * Math.pow(0.8, i))
+                .mapToObj(i -> new SimpleEntry<String, Double>((String)we.priority.toArray()[i], (double)((WordEntry.of((String)we.priority.toArray()[i], index, false).occurrences + we.occurrences) * 1.0/2.0 * Math.pow(2, i))
             )))
             .collect(Collectors.groupingBy(Entry::getKey, Collectors.averagingDouble(Entry::getValue)));
         
@@ -75,7 +77,7 @@ class SSR extends TestMethod {
         for(String word : syntacticIntersect){
             WordEntry we = WordEntry.of(word, index, false);
             if(we != null)
-                similarity += distanceAsFraction.apply((double)we.occurrences);
+                similarity += distanceAsFraction.apply((double)we.documents);
         }
         
         // ~ Semantic Relatedness ~
@@ -103,8 +105,8 @@ class SSR extends TestMethod {
         
         // ~ Scoring ~
         // ===========
-
-        return closenessAsFraction.apply(OVERALL_WEIGHT * (SIMILARITY_WEIGHT * similarity + RELATEDNESS_WEIGHT * relatedness));
+// 10 corresp. CONCEPT_SCOPE
+        return MIN_SCORE + (MAX_SCORE - MIN_SCORE) * closenessAsFraction.apply(OVERALL_WEIGHT * (SIMILARITY_WEIGHT * similarity + RELATEDNESS_WEIGHT * relatedness));
     }
 
     @Override
