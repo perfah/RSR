@@ -3,4 +3,5 @@ TestMethods/*.class
 Utils/*.class
 SSR/index.dat
 SSR/index/
+SSR/index_bak/
 Samples/
