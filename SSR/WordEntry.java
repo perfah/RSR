@@ -24,6 +24,8 @@ import java.util.Comparator;
 
 public class WordEntry implements Serializable {
 
+    static transient HashMap<String, String> precededNeighbors = new HashMap<String, String>();
+
     class WordComparator implements Comparator<String>, Serializable {
         public transient HashMap<String, Double> contextHandle;
         public transient Index indexHandle;
@@ -43,6 +45,7 @@ public class WordEntry implements Serializable {
                 return 0;
             }
             else {
+                /*
                 double mostUsedTermOccurrences = indexHandle.mostOccuringEntry.occurrences;             // Most occuring term in all Docs.
                 double indexedDocuments = indexHandle.documents;                                        // Total number of indexed Docs.
 
@@ -60,11 +63,11 @@ public class WordEntry implements Serializable {
                 double idfA = indexedDocuments / docOccurrencesA;
                 double idfB = indexedDocuments / docOccurrencesB;
 
-                double commonOccurrencesA = WordEntry.this.context.get(a);
-                double commonOccurrencesB = WordEntry.this.context.get(b);
-
-                double tfidfA = commonOccurrencesA * tfA * idfA;
-                double tfidfB = commonOccurrencesB * tfB * idfB;
+                double commonOccurrencesA = WordEntry.this.mutualOccurrences.get(a);
+                double commonOccurrencesB = WordEntry.this.mutualOccurrences.get(b);
+*/
+                double tfidfA = WordEntry.this.conceptRelevance(a, indexHandle);// * tfA * idfA;
+                double tfidfB = WordEntry.this.conceptRelevance(b, indexHandle); // * tfB * idfB;
 
                 //System.out.println(a + "=" + tfidfA + " : " + b + "=" + tfidfB);
                 //return (int)(
@@ -86,17 +89,19 @@ public class WordEntry implements Serializable {
     public static final float AGNOSTIC_WEIGHT = 0.5f;
 
     public String word;
-    private HashMap<String, Double> context;
-    public PriorityQueue<String> priority;
+    private HashMap<String, Double> mutualOccurrences;
+    private HashMap<String, Double> mutualDocuments;
+    public PriorityQueue<String> concepts;
     private WordComparator wordCmp;
     public int occurrences;
     public int documents;
 
     public WordEntry(String word, Index index){
         this.word = word;
-        context = new HashMap<String, Double>();
-        wordCmp = this.new WordComparator(context, index);
-        priority = new PriorityQueue<String>(10, wordCmp);
+        mutualOccurrences = new HashMap<String, Double>();
+        mutualDocuments = new HashMap<String, Double>(); 
+        wordCmp = this.new WordComparator(mutualOccurrences, index);
+        concepts = new PriorityQueue<String>(10, wordCmp);
         occurrences = 0;
         documents = 0;
     }
@@ -128,8 +133,9 @@ public class WordEntry implements Serializable {
     public void delete(Index index) {
         for(WordEntry entry : index.entries.values()){
             if(entry != this) {
-                entry.context.remove(this.word);
-                entry.priority.remove(this.word);
+                entry.mutualOccurrences.remove(this.word);
+                entry.mutualDocuments.remove(this.word);
+                entry.concepts.remove(this.word);
             }
         }
 
@@ -189,7 +195,7 @@ public class WordEntry implements Serializable {
 
         WordEntry entry = (WordEntry) ois.readObject();
 
-        entry.wordCmp.contextHandle = entry.context;
+        entry.wordCmp.contextHandle = entry.mutualOccurrences;
         entry.wordCmp.indexHandle = index;
         
         index.entries.put(entry.word.hashCode(), entry);
@@ -204,42 +210,30 @@ public class WordEntry implements Serializable {
 
         assert(entry1 != null && entry2 != null);
 
-        entry1.context.put(entry2.word, entry1.context.getOrDefault(entry2.word, 0.0) + 1.0);
-        if(!entry1.priority.contains(entry2.word))
-            entry1.priority.add(entry2.word);
+        entry1.mutualOccurrences.put(entry2.word, entry1.mutualOccurrences.getOrDefault(entry2.word, 0.0) + 1.0);
+        if(!entry1.concepts.contains(entry2.word))
+            entry1.concepts.add(entry2.word);
 
-        entry2.context.put(entry1.word, entry2.context.getOrDefault(entry1.word, 0.0) + 1.0);
-        if(!entry2.priority.contains(entry1.word))
-            entry2.priority.add(entry1.word);
+        entry2.mutualOccurrences.put(entry1.word, entry2.mutualOccurrences.getOrDefault(entry1.word, 0.0) + 1.0);
+        if(!entry2.concepts.contains(entry1.word))
+            entry2.concepts.add(entry1.word);
+
+        if(!Stream.of(entry1.word, entry2.word).anyMatch(w -> WordEntry.precededNeighbors.containsKey(w))){
+            WordEntry.precededNeighbors.put(entry1.word, entry2.word);
+            entry1.mutualDocuments.put(entry2.word, entry1.mutualDocuments.getOrDefault(entry2.word, 0.0) + 1);
+            entry2.mutualDocuments.put(entry1.word, entry2.mutualDocuments.getOrDefault(entry1.word, 0.0) + 1);
+        }
     }
 
-    // Euclidean similarity
-    public static double similarity(WordEntry entry1, WordEntry entry2) {
-        double distance = 0;
+    public double conceptRelevance(String concept, Index index) {
+        WordEntry neighbor = WordEntry.of(concept, index, false);
+        if(neighbor == null)
+            return 0.0;
 
-        Set<String> set = Stream
-            .concat(entry1.priority.stream().limit(20), entry2.priority.stream().limit(20))
-            .collect(Collectors.toSet());
+        double tf =  mutualOccurrences.getOrDefault(concept, 0.0) / (occurrences + neighbor.occurrences);
+        double idf = mutualDocuments.getOrDefault(concept, 0.0) / (documents + neighbor.documents);
 
-        //System.out.println(entry1.word + " " + set);
-
-        for(String concept : set) {
-            double a;
-            if(entry1.occurrences > 0)
-                a = entry1.context.getOrDefault(concept, 0.0) / (double)entry1.occurrences;
-            else
-                a = 0.0;
-
-                double b;
-            if(entry2.occurrences > 0)
-                b = entry2.context.getOrDefault(concept, 0.0) / (double)entry2.occurrences;
-            else
-                b = 0.0;
-        
-            distance += Math.abs(a - b);
-        }
-        
-        return 1f / (1f + distance);
+        return tf*idf;
     }
 }
 

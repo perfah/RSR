@@ -62,8 +62,10 @@ class SSR extends TestMethod {
             .map(w -> WordEntry.of(w, index, false))
             .filter(Objects::nonNull)
             .flatMap(we -> IntStream
-                .range(0, Math.min(we.priority.size(), CONCEPT_SCOPE))
-                .mapToObj(i -> new SimpleEntry<String, Double>((String)we.priority.toArray()[i], (double)((WordEntry.of((String)we.priority.toArray()[i], index, false).occurrences + we.occurrences) * 1.0/2.0 * Math.pow(2, i))
+                .range(0, Math.min(we.concepts.size(), CONCEPT_SCOPE))
+                .mapToObj(i -> new SimpleEntry<String, Double>(
+                    (String)we.concepts.toArray()[i], 
+                    (double)i
             )))
             .collect(Collectors.groupingBy(Entry::getKey, Collectors.averagingDouble(Entry::getValue)));
         

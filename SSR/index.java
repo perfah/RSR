@@ -176,7 +176,7 @@ class Index implements Serializable {
     public void list() {
         loadAllEntries();
         for(WordEntry entry : entries.values())
-            System.out.println(entry.word + " <=> " + entry.priority);
+            System.out.println(entry.word + " <=> " + entry.concepts);
     }
     
 
@@ -220,6 +220,7 @@ class Index implements Serializable {
             }
             catch(Exception e){
                 System.out.println("[ERROR] No comparison span!");
+                e.printStackTrace();
             }
         }
         
