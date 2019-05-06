@@ -223,23 +223,14 @@ public class WordEntry implements Serializable {
 
         //System.out.println(entry1.word + " " + set);
 
-        for(String concept : set) {
-            double a;
-            if(entry1.occurrences > 0)
-                a = entry1.context.getOrDefault(concept, 0.0) / (double)entry1.occurrences;
-            else
-                a = 0.0;
+        return tf; //*idf;
+    }
 
-                double b;
-            if(entry2.occurrences > 0)
-                b = entry2.context.getOrDefault(concept, 0.0) / (double)entry2.occurrences;
-            else
-                b = 0.0;
-        
-            distance += Math.abs(a - b);
-        }
-        
-        return 1f / (1f + distance);
+    public static double closeness(WordEntry entry1, WordEntry entry2) {
+        double tf =  entry1.mutualOccurrences.getOrDefault(entry2.word, 0.0) / (entry1.occurrences + entry2.occurrences);
+        double idf = entry1.mutualDocuments.getOrDefault(entry2.word, 0.0) / (entry1.documents + entry2.documents);
+
+        return tf; //*idf;
     }
 }
 
