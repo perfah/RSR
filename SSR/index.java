@@ -176,7 +176,7 @@ class Index implements Serializable {
     public void list() {
         loadAllEntries();
         for(WordEntry entry : entries.values())
-            System.out.println(entry.word + " <=> " + entry.priority);
+            System.out.println(entry.word + " <=> " + entry.concepts);
     }
     
 

@@ -23,13 +23,14 @@ import java.util.PriorityQueue;
 import java.util.Comparator;
 
 public class WordEntry implements Serializable {
+    public static HashMap<String, String> occurredInSameDoc = new HashMap<String, String>();
 
     class WordComparator implements Comparator<String>, Serializable {
         public transient HashMap<String, Double> contextHandle;
         public transient Index indexHandle;
 
-        public WordComparator(HashMap<String, Double> context, Index index){
-            this.contextHandle = context;
+        public WordComparator(HashMap<String, Double> mutualOccurrences, Index index){
+            this.contextHandle = mutualOccurrences;
             this.indexHandle = index;
         }
 
@@ -60,8 +61,8 @@ public class WordEntry implements Serializable {
                 double idfA = indexedDocuments / docOccurrencesA;
                 double idfB = indexedDocuments / docOccurrencesB;
 
-                double commonOccurrencesA = WordEntry.this.context.get(a);
-                double commonOccurrencesB = WordEntry.this.context.get(b);
+                double commonOccurrencesA = WordEntry.this.mutualOccurrences.get(a);
+                double commonOccurrencesB = WordEntry.this.mutualOccurrences.get(b);
 
                 double tfidfA = commonOccurrencesA * tfA * idfA;
                 double tfidfB = commonOccurrencesB * tfB * idfB;
@@ -86,17 +87,19 @@ public class WordEntry implements Serializable {
     public static final float AGNOSTIC_WEIGHT = 0.5f;
 
     public String word;
-    private HashMap<String, Double> context;
-    public PriorityQueue<String> priority;
+    private HashMap<String, Double> mutualOccurrences;
+    private HashMap<String, Double> mutualDocuments;
+    public PriorityQueue<String> concepts;
     private WordComparator wordCmp;
     public int occurrences;
     public int documents;
 
     public WordEntry(String word, Index index){
         this.word = word;
-        context = new HashMap<String, Double>();
-        wordCmp = this.new WordComparator(context, index);
-        priority = new PriorityQueue<String>(10, wordCmp);
+        mutualOccurrences = new HashMap<String, Double>();
+        mutualDocuments = new HashMap<String, Double>();
+        wordCmp = this.new WordComparator(mutualOccurrences, index);
+        concepts = new PriorityQueue<String>(10, wordCmp);
         occurrences = 0;
         documents = 0;
     }
@@ -128,8 +131,8 @@ public class WordEntry implements Serializable {
     public void delete(Index index) {
         for(WordEntry entry : index.entries.values()){
             if(entry != this) {
-                entry.context.remove(this.word);
-                entry.priority.remove(this.word);
+                entry.mutualOccurrences.remove(this.word);
+                entry.concepts.remove(this.word);
             }
         }
 
@@ -189,7 +192,7 @@ public class WordEntry implements Serializable {
 
         WordEntry entry = (WordEntry) ois.readObject();
 
-        entry.wordCmp.contextHandle = entry.context;
+        entry.wordCmp.contextHandle = entry.mutualOccurrences;
         entry.wordCmp.indexHandle = index;
         
         index.entries.put(entry.word.hashCode(), entry);
@@ -204,27 +207,21 @@ public class WordEntry implements Serializable {
 
         assert(entry1 != null && entry2 != null);
 
-        entry1.context.put(entry2.word, entry1.context.getOrDefault(entry2.word, 0.0) + 1.0);
-        if(!entry1.priority.contains(entry2.word))
-            entry1.priority.add(entry2.word);
+        entry1.mutualOccurrences.put(entry2.word, entry1.mutualOccurrences.getOrDefault(entry2.word, 0.0) + 1.0);
+        if(!entry1.concepts.contains(entry2.word))
+            entry1.concepts.add(entry2.word);
 
-        entry2.context.put(entry1.word, entry2.context.getOrDefault(entry1.word, 0.0) + 1.0);
-        if(!entry2.priority.contains(entry1.word))
-            entry2.priority.add(entry1.word);
+        entry2.mutualOccurrences.put(entry1.word, entry2.mutualOccurrences.getOrDefault(entry1.word, 0.0) + 1.0);
+        if(!entry2.concepts.contains(entry1.word))
+            entry2.concepts.add(entry1.word);
+
+        if(!Stream.of(entry1.word, entry2.word).anyMatch(word -> WordEntry.occurredInSameDoc.containsKey(word))){
+            WordEntry.occurredInSameDoc.put(entry1.word, entry2.word);
+            entry1.mutualDocuments.put(entry2.word, entry1.mutualDocuments.getOrDefault(entry2.word, 0.0) + 1.0);
+            entry2.mutualDocuments.put(entry1.word, entry2.mutualDocuments.getOrDefault(entry1.word, 0.0) + 1.0);
+        }
     }
 
-    // Euclidean similarity
-    public static double similarity(WordEntry entry1, WordEntry entry2) {
-        double distance = 0;
-
-        Set<String> set = Stream
-            .concat(entry1.priority.stream().limit(20), entry2.priority.stream().limit(20))
-            .collect(Collectors.toSet());
-
-        //System.out.println(entry1.word + " " + set);
-
-        return tf; //*idf;
-    }
 
     public static double closeness(WordEntry entry1, WordEntry entry2) {
         double tf =  entry1.mutualOccurrences.getOrDefault(entry2.word, 0.0) / (entry1.occurrences + entry2.occurrences);
