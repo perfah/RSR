@@ -27,9 +27,9 @@ import java.util.Comparator;
 
 class SSR extends TestMethod {
     private Index index;
-    final int CONCEPT_SCOPE = 40;
+    final int CONCEPT_SCOPE = 20;
     final double SIMILARITY_WEIGHT = 0.0;
-    final double RELATEDNESS_WEIGHT = 1.0; 
+    final double RELATEDNESS_WEIGHT = 0.01; 
     final double OVERALL_WEIGHT = 1.0; 
     final double MIN_SCORE = 0.2;
     final double MAX_SCORE = 1.0;
@@ -60,29 +60,32 @@ class SSR extends TestMethod {
         Function<Double, Double> closenessAsFraction = x -> x / (1.0 + Math.abs(x));
         Function<Double, Double> distanceAsFraction = x -> 1.0 / (1.0 + Math.abs(x));
 
-        Function<List<String>, Map<String, List<WordEntry>>> neighboorhoodDump = words -> words
+        Function<List<String>, Map<String, Double>> neighboorhoodDump = words -> words
             .stream()
             .map(w -> WordEntry.of(w, index, false))
             .filter(Objects::nonNull)
-            .flatMap(we -> IntStream
-                .range(0, Math.min(we.concepts.size(), CONCEPT_SCOPE))
-                .mapToObj(i -> new SimpleEntry<String, WordEntry>(
-                    (String)we.concepts.toArray()[i], 
-                    we
-            )))
-            .collect(Collectors.groupingBy(Entry::getKey, Collectors.mapping(Entry::getValue, Collectors.toList())));
+            .flatMap(we1 -> IntStream
+                .range(0, Math.min(we1.concepts.size(), CONCEPT_SCOPE))
+                .mapToObj(i -> {
+                    WordEntry we2 = WordEntry.of((String)we1.concepts.toArray()[i], index, false);
+                    return new SimpleEntry<String, Double>(we2.word, WordEntry.closeness(we1, we2, index));
+                })
+            )
+            .collect(Collectors.groupingBy(Entry::getKey, Collectors.summingDouble(Entry::getValue)));
         
         // ~ Semantic Similarity ~
         // =======================
-
+        
         double similarity = 0.0;
 
-        ArrayList<String> syntacticIntersect = new ArrayList<String>(words1);
-        syntacticIntersect.retainAll(words2); 
-        for(String word : syntacticIntersect){
-            WordEntry we = WordEntry.of(word, index, false);
-            if(we != null)
-                similarity += distanceAsFraction.apply((double)we.documents);
+        if(SIMILARITY_WEIGHT > 0.0){
+            ArrayList<String> syntacticIntersect = new ArrayList<String>(words1);
+            syntacticIntersect.retainAll(words2); 
+            for(String word : syntacticIntersect){
+                WordEntry we = WordEntry.of(word, index, false);
+                if(we != null)
+                    similarity += distanceAsFraction.apply((double)we.documents.size()); 
+            }
         }
         
         // ~ Semantic Relatedness ~
@@ -90,54 +93,57 @@ class SSR extends TestMethod {
 
         double relatedness = 0.0;
 
-        Map<String, List<WordEntry>> entries1 = neighboorhoodDump.apply(words1);
-        Map<String, List<WordEntry>> entries2 = neighboorhoodDump.apply(words2);
+        //if(RELATEDNESS_WEIGHT > 0.0){
+            Map<String, Double> entries1 = neighboorhoodDump.apply(words1);
+            Map<String, Double> entries2 = neighboorhoodDump.apply(words2);
+
+            List<String> conceptualIntersect = new ArrayList<String>(entries1.keySet());
+            conceptualIntersect.retainAll(entries2.keySet());
         
-        List<String> conceptualIntersect = new ArrayList<String>(entries1.keySet());
-        conceptualIntersect.retainAll(entries2.keySet());
-    
-        HashMap<String, Double> rank = new HashMap<String, Double>();
-        for(String concept : conceptualIntersect) {
-            WordEntry c = WordEntry.of(concept, index, false);
+            HashMap<String, Double> rank = new HashMap<String, Double>();
+            for(String concept : conceptualIntersect) 
+                rank.put(concept, (entries1.get(concept) + entries2.get(concept))); // * distanceAsFraction.apply(Math.abs(entries1.get(concept) - entries2.get(concept))));
+            
+            
+            conceptualIntersect.sort(Comparator.comparingDouble(x -> rank.get(x)).reversed());
+            conceptualIntersect = conceptualIntersect.subList(0, Math.min(CONCEPT_SCOPE, conceptualIntersect.size()));
 
-            double maxCloseness = 0.0;
-            WordEntry finalA = null;
-            WordEntry finalB = null;
+            int x = 0;
+            if(verbose)
+                System.out.println("\nMOST RELEVANT CONCEPTS IN ORDER:");
+            
+            double abSum = 0.0;
+            double aSum = 0.0;
+            double bSum = 0.0;
+            double sMax = 0.0;
 
-            for(WordEntry a : entries1.get(concept)){
-                for(WordEntry b : entries2.get(concept)){
-                    double cand = 0.0;
-                        //(a.word.equals(b.word)) ? 0.0 : (CONCEPT_SCOPE * WordEntry.closeness(a, b)) + 
-                    cand += (CONCEPT_SCOPE - IntStream.range(0, a.concepts.size()).filter(i -> c.word.equals(a.concepts.toArray()[i])).findFirst().getAsInt());
-                    cand += (CONCEPT_SCOPE - IntStream.range(0, b.concepts.size()).filter(i -> c.word.equals(b.concepts.toArray()[i])).findFirst().getAsInt());
-                    
-                    if(cand >= maxCloseness){
-                        maxCloseness = cand;
-                        finalA = a;
-                        finalB = b;
-                    }
+            for(String concept : conceptualIntersect){
+                double A = entries1.get(concept); 
+                double B = entries2.get(concept); 
+                
+                aSum += Math.pow(A, 2);
+                bSum += Math.pow(B, 2);
+                abSum += A*B;
+
+                double max = Math.abs(A + B);
+                double val = (max - Math.abs(A - B));
+
+                sMax += max;
+                relatedness += rank.get(concept); //val;
+                if(verbose){
+                    x++;
+                    System.out.println(x + ". " + concept + " <-> " + A + " : " + B);
                 }
+                
             }
-            rank.put(concept, maxCloseness);
-            entries1.get(concept).retainAll(Arrays.asList(finalA));
-            entries2.get(concept).retainAll(Arrays.asList(finalB));
-        }
-        
-        conceptualIntersect.sort(Comparator.comparingDouble(x -> rank.get(x)).reversed());
-        conceptualIntersect = conceptualIntersect.subList(0, Math.min(CONCEPT_SCOPE, conceptualIntersect.size()));
 
-        if(verbose)
-            System.out.println("\nMOST RELEVANT CONCEPTS IN ORDER:");
+            //double sim = abSum / (Math.sqrt(aSum) * Math.sqrt(bSum));
+            //double ratio = relatedness / sMax;
+
+            
+       // }
         
-        for(String key : conceptualIntersect){
-            relatedness += rank.get(key);
-            if(verbose){
-                System.out.print(key + " <-> " + rank.get(key));
-            }
-            System.out.println(" (" + entries1.get(key).get(0).word + ", " + entries2.get(key).get(0).word + ")");
-        }
-        
-        // ~ Scoring ~
+        // ~ Scoring ~  
         // ===========
 
         return MIN_SCORE + (MAX_SCORE - MIN_SCORE) * closenessAsFraction.apply(OVERALL_WEIGHT * (SIMILARITY_WEIGHT * similarity + RELATEDNESS_WEIGHT * relatedness));

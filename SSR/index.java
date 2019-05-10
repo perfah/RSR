@@ -124,7 +124,7 @@ class Index implements Serializable {
 
             for(int i = 0; i < bagOfWords.size(); i++){
                 if(bagOfWords.get(i).equals(word)){
-                    x.record(this);
+                    x.record(this, docName);
                     occurrences++;
                     
                     for(int j = Math.max(0, i - comparisonSpan/2); j < Math.min(i + comparisonSpan/2, bagOfWords.size()); j++){

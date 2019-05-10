@@ -23,8 +23,6 @@ import java.util.PriorityQueue;
 import java.util.Comparator;
 
 public class WordEntry implements Serializable {
-    public static HashMap<String, String> occurredInSameDoc = new HashMap<String, String>();
-
     class WordComparator implements Comparator<String>, Serializable {
         public transient HashMap<String, Double> contextHandle;
         public transient Index indexHandle;
@@ -44,6 +42,7 @@ public class WordEntry implements Serializable {
                 return 0;
             }
             else {
+                /*
                 double mostUsedTermOccurrences = indexHandle.mostOccuringEntry.occurrences;             // Most occuring term in all Docs.
                 double indexedDocuments = indexHandle.documents;                                        // Total number of indexed Docs.
 
@@ -63,9 +62,9 @@ public class WordEntry implements Serializable {
 
                 double commonOccurrencesA = WordEntry.this.mutualOccurrences.get(a);
                 double commonOccurrencesB = WordEntry.this.mutualOccurrences.get(b);
-
-                double tfidfA = commonOccurrencesA * tfA * idfA;
-                double tfidfB = commonOccurrencesB * tfB * idfB;
+*/
+                double tfidfA = WordEntry.closeness(WordEntry.this, WordEntry.of(a, indexHandle, false), indexHandle); //commonOccurrencesA * tfA * idfA;
+                double tfidfB = WordEntry.closeness(WordEntry.this, WordEntry.of(b, indexHandle, false), indexHandle);//commonOccurrencesB * tfB * idfB;
 
                 //System.out.println(a + "=" + tfidfA + " : " + b + "=" + tfidfB);
                 //return (int)(
@@ -87,25 +86,26 @@ public class WordEntry implements Serializable {
     public static final float AGNOSTIC_WEIGHT = 0.5f;
 
     public String word;
+    public ArrayList<Integer> documents;
     private HashMap<String, Double> mutualOccurrences;
-    private HashMap<String, Double> mutualDocuments;
     public PriorityQueue<String> concepts;
     private WordComparator wordCmp;
     public int occurrences;
-    public int documents;
 
     public WordEntry(String word, Index index){
         this.word = word;
         mutualOccurrences = new HashMap<String, Double>();
-        mutualDocuments = new HashMap<String, Double>();
+        documents = new ArrayList<Integer>();
         wordCmp = this.new WordComparator(mutualOccurrences, index);
         concepts = new PriorityQueue<String>(10, wordCmp);
         occurrences = 0;
-        documents = 0;
     }
 
-    public void record(Index index) {
+    public void record(Index index, String document) {
         occurrences++;
+        int hash = document.hashCode();
+        if(!documents.contains(hash))
+            documents.add(hash);
 
         if(index.mostOccuringEntry == null || occurrences > index.mostOccuringEntry.occurrences)
             index.mostOccuringEntry = this;
@@ -178,9 +178,6 @@ public class WordEntry implements Serializable {
                 e.printStackTrace();
                 entry = new WordEntry(word, index);  
             }
-
-            if(indexing)
-                entry.documents++;
         }
 
         return entry;
@@ -214,20 +211,20 @@ public class WordEntry implements Serializable {
         entry2.mutualOccurrences.put(entry1.word, entry2.mutualOccurrences.getOrDefault(entry1.word, 0.0) + 1.0);
         if(!entry2.concepts.contains(entry1.word))
             entry2.concepts.add(entry1.word);
-
-        if(!Stream.of(entry1.word, entry2.word).anyMatch(word -> WordEntry.occurredInSameDoc.containsKey(word))){
-            WordEntry.occurredInSameDoc.put(entry1.word, entry2.word);
-            entry1.mutualDocuments.put(entry2.word, entry1.mutualDocuments.getOrDefault(entry2.word, 0.0) + 1.0);
-            entry2.mutualDocuments.put(entry1.word, entry2.mutualDocuments.getOrDefault(entry1.word, 0.0) + 1.0);
-        }
     }
 
 
-    public static double closeness(WordEntry entry1, WordEntry entry2) {
-        double tf =  entry1.mutualOccurrences.getOrDefault(entry2.word, 0.0) / (entry1.occurrences + entry2.occurrences);
-        double idf = entry1.mutualDocuments.getOrDefault(entry2.word, 0.0) / (entry1.documents + entry2.documents);
+    public static double closeness(WordEntry entry1, WordEntry entry2, Index index) {
+        double tf =  Math.min(2.0 * entry1.mutualOccurrences.getOrDefault(entry2.word, 0.0) / (entry1.occurrences + entry2.occurrences), 1.0);
 
-        return tf; //*idf;
+        double N = 1662; //(double)index.documents;
+        double idf = Math.log(N / (Math.min(1.0 + (double)entry2.documents.size(), N)));
+
+        return tf * idf;
+    }
+
+    public static double maxCloseness() {
+        return 1.69897000434;
     }
 }
 
