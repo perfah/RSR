@@ -1,12 +1,35 @@
-# TextDiff
+# SSR
+A testing environment for Scalable Semantic Relatedness (SSR), a distributional semantics model aiming to quantify how close two texts are conceptually.
 
+## Usage
 
-
-## Components
+Calibrate the index:
+```console
+./SSR/indexer <file_or_dir_to_learn_from> <association_span>
 ```
 
-./benchmarker           # Used to run all 12,227 tests, with the "How to run" commands.
+List associations in index:
+```console
+./SSR/indexer --list
+```
 
+Remove index to start over:
+```console
+rm -r SSR/index
+```
+
+Purge stop words in index:
+```console
+./SSR/indexer --purge [--preview]
+```
+
+Benchmark SSR:
+```console
+./benchmarker <LeePinCombeWelsh/complete.sh|LeePinCombeWelsh/short.sh> [--sort]
+```
+
+## Resources
+```
 
 LeePincombeWelsh/
   complete.csv          # The data for the 12,227 tests
@@ -16,30 +39,7 @@ LeePincombeWelsh/
 Samples/                # The samples folder includes different text files which can be used to test the Indexer.
 
 SSR/
-
+  indexer.sh
+  ...
 
 ```
-
-## How To Run:
-
-````
-# Run all tests
-
-./benchmarker
-
-
-# Index words (add to context relations) in several files:
-
-./indexer <FilePath>   
-
-
-# Remove weak associations [PURGE]
-
-./indexer -p
-
-
-# Clean all previous context relations.
-
-rm index.dat
-
-````
