@@ -26,7 +26,7 @@ rm -r SSR/index
 ```console
 ./SSR/indexer --purge [--preview]
 ```
-- **--preview** : Shows what words would be removed without action
+- **[--preview]** : Shows what words would be removed without action
 
 **Benchmark SSR / evaluate SSR against a set of tests (human opinions):**
 Shows the results from specified tests and calculates a Pearson correlations between the algorithmic and human assessments.
