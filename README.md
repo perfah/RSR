@@ -1,32 +1,40 @@
 # SSR
-A testing environment for Scalable Semantic Relatedness (SSR), a distributional semantics model aiming to quantify how close two texts are conceptually.
+A testing environment for Scalable Semantic Relatedness (SSR), a distributional semantics model aiming to quantify how close two texts are conceptually. SSR uses an incrementally improvable index as a basis for assessing semantic relatedness. This work is a part of our Bachelor's degree project. 
+
+By [Per Fahlander](github.com/perfah) and [Mattias Bergsström](github.com/devmattb).
 
 ## Usage
 
-Calibrate the index:
+**Calibrate the index:**
 ```console
 ./SSR/indexer <file_or_dir_to_learn_from> <association_span>
 ```
+- **<file_or_dir_to_learn_from>** : A document file (or a directory containg such) with plain text that can be used for associating words in order to know which go together.
+- **<association_span>** : How far two words can be apart and still get associated together.
 
-List associations in index:
+**List associations in index:**
 ```console
 ./SSR/indexer --list
 ```
 
-Remove index to start over:
+**Remove index to start over:**
 ```console
 rm -r SSR/index
 ```
 
-Purge stop words in index:
+**Purge (stop) words in index:**
 ```console
 ./SSR/indexer --purge [--preview]
 ```
+- **--preview** : Shows what words would be removed without action
 
-Benchmark SSR:
+**Benchmark SSR / evaluate SSR against a set of tests (human opinions):**
 ```console
-./benchmarker <LeePinCombeWelsh/complete.sh|LeePinCombeWelsh/short.sh> [--sort]
+./benchmarker <tests_csv_file> [--sort]
 ```
+- **<tests_csv_file>** : the set of tests for the evaluation (e.g. "LeePinCombeWelsh/complete.sh")
+- **[--sort]** : Sorts the test in order of aggreement
+
 
 ## Resources
 ```
