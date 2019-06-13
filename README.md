@@ -29,11 +29,12 @@ rm -r SSR/index
 - **--preview** : Shows what words would be removed without action
 
 **Benchmark SSR / evaluate SSR against a set of tests (human opinions):**
+Shows the results from specified tests and calculates a Pearson correlations between the algorithmic and human assessments.
 ```console
 ./benchmarker <tests_csv_file> [--sort]
 ```
 - **<tests_csv_file>** : the set of tests for the evaluation (e.g. "LeePinCombeWelsh/complete.sh")
-- **[--sort]** : Sorts the test in order of aggreement
+- **[--sort]** : The tests SSR performed the worst on will be placed at the end.
 
 
 ## Resources
