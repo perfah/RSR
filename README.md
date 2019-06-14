@@ -1,7 +1,7 @@
 # SSR
 A testing environment for Scalable Semantic Relatedness (SSR), a distributional semantics model aiming to quantify how close two texts are conceptually. SSR uses an incrementally improvable index as a basis for assessing semantic relatedness. This work is a part of our Bachelor's degree project. 
 
-By [Per Fahlander](github.com/perfah) and [Mattias Bergsström](github.com/devmattb).
+By [Per Fahlander](https://www.github.com/perfah) and [Mattias Bergsström](https://www.github.com/devmattb).
 
 ## Usage
 
